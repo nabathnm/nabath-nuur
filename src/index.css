@@ -1,13 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Inter Variable', sans-serif;
+    --font-sans: 'Plus Jakarta Sans Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -84,9 +84,9 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --background: #2E3440;
+    --foreground: #ffffff;
+    --card: rgb(255 255 255 / 30%);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
@@ -126,5 +126,29 @@
     }
   html {
     @apply font-sans;
+    /* scroll-behavior dihandle oleh Lenis smooth scroll */
     }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+    p {
+    @apply text-sm lg:text-base; 
+  }
+
+  @layer utilities {
+    .glass {
+      @apply border border-white/10 bg-white/[0.04]  shadow-2xl backdrop-blur-xl;
+      /* @apply bg-white/[0.06] backdrop-blur-xl backdrop-saturate-150 border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden h-[350px] flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.35)]; */
+    }
+    
+    /* Opsional: Variasi glass effect khusus dark mode agar lebih menonjol */
+    .dark .glass {
+      /* @apply bg-white/[0.06] backdrop-blur-xl backdrop-saturate-150 border border-white/[0.08] rounded-2xl p-6 relative overflow-hidden h-[350px] flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.35)]; */
+      @apply border border-white/10 bg-white/[0.04]  shadow-2xl backdrop-blur-xl;
+    }
+  }
 }
