@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Menu, X } from "lucide-react"
 import { useLenis } from "@/lib/lenis"
+import Glass from "@/components/ui/glass"
 
 const navItems = [
   { name: "About", href: "#about" },
@@ -78,23 +79,25 @@ export default function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 md:px-8">
       <nav
         aria-label="Main Navigation"
-        className={`mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/15 px-6 py-3 transition-all duration-300 ${
+        className={`relative mx-auto flex max-w-6xl items-center justify-between overflow-hidden rounded-full border border-white/15 px-6 py-3 transition-all duration-300 ${
           scrolled
             ? "bg-[#2E3440]/85 shadow-2xl backdrop-blur-2xl"
             : "bg-[#2E3440]/60 shadow-lg backdrop-blur-xl"
         }`}
       >
+        <Glass rounded="rounded-full" />
+
         {/* Logo */}
         <a
           href="#home"
           onClick={(e) => handleNavClick(e, "#home")}
-          className="text-base font-bold tracking-wider text-white transition hover:text-white/80"
+          className="relative z-10 text-base font-bold tracking-wider text-white transition hover:text-white/80"
         >
           Nabath<span className="text-white/40">.</span>
         </a>
 
         {/* Desktop Links */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="relative z-10 hidden items-center gap-1 md:flex">
           {navItems.map((item) => {
             const isActive = activeSection === item.href.replace("#", "")
             return (
@@ -115,7 +118,7 @@ export default function Navbar() {
         </div>
 
         {/* Right CTA / Mobile Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-3">
 
           {/* Mobile Menu Toggle Button */}
           <button
@@ -131,8 +134,9 @@ export default function Navbar() {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="mx-auto mt-2 max-w-6xl rounded-3xl border border-white/15 bg-[#2E3440]/95 p-6 shadow-2xl backdrop-blur-2xl md:hidden">
-          <div className="flex flex-col gap-3">
+        <div className="relative mx-auto mt-2 max-w-6xl overflow-hidden rounded-3xl border border-white/15 bg-[#2E3440]/95 p-6 shadow-2xl backdrop-blur-2xl md:hidden">
+          <Glass rounded="rounded-3xl" />
+          <div className="relative z-10 flex flex-col gap-3">
             {navItems.map((item) => {
               const isActive = activeSection === item.href.replace("#", "")
               return (

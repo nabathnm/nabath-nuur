@@ -1,471 +1,503 @@
-import { useState } from "react";
-import {
-    BriefcaseBusiness,
-    CalendarDays,
-    MapPin,
-    ArrowUpRight,
-} from "lucide-react";
-import Glass from "../ui/glass";
+import { useExperiences } from "@/hooks/useExperiences";
+import { useLenis } from "@/lib/lenis";
+import type { Experience } from "@/models/experience";
+import { motion, useMotionValueEvent, useScroll, useTransform, type MotionValue } from "framer-motion";
+import { BriefcaseBusiness, CalendarDays, ChevronDown, MapPin } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-type Experience = {
-    id: number;
-    role: string;
-    company: string;
-    type: string;
-    location: string;
-    start: string;
-    end: string;
-    description: string;
-    tasks: string[];
-    technologies: string[];
-};
+/* =====================================================
+   DYNAMIC CARD STACK CONFIGURATION GENERATOR
+   Supports any total number of experiences loaded from Turso
+   Fully opaque solid cards (no transparency / no opacity fading)
+====================================================== */
+function getCardConfig(index: number, total: number) {
+    const zIndex = (index + 1) * 10;
 
-const experiences: Experience[] = [
-    {
-        id: 1,
-        role: "Mobile Engineer",
-        company: "Raion Community",
-        type: "Organization",
-        location: "Universitas Brawijaya",
-        start: "2026",
-        end: "Present",
-        description:
-            "Developing mobile applications and collaborating with product, UI/UX, and backend teams to deliver functional and responsive experiences.",
-        tasks: [
-            "Build mobile applications using Flutter",
-            "Implement state management using Provider and BLoC",
-            "Integrate REST APIs with mobile applications",
-            "Translate UI/UX designs into responsive interfaces",
-        ],
-        technologies: [
-            "Flutter",
-            "Dart",
-            "Provider",
-            "BLoC",
-            "REST API",
-        ],
-    },
-    {
-        id: 2,
-        role: "Frontend Developer",
-        company: "Raion Community",
-        type: "Organization",
-        location: "Universitas Brawijaya",
-        start: "2026",
-        end: "Present",
-        description:
-            "Working on the Raion web platform by developing frontend interfaces and collaborating with backend, product, and UI/UX teams.",
-        tasks: [
-            "Develop web interfaces using React and Next.js",
-            "Build responsive UI with Tailwind CSS",
-            "Integrate frontend with backend APIs",
-            "Collaborate with backend and UI/UX teams",
-        ],
-        technologies: [
-            "React",
-            "Next.js",
-            "TypeScript",
-            "Tailwind CSS",
-        ],
-    },
-    {
-        id: 3,
-        role: "Assistant Practicum",
-        company: "Faculty of Computer Science",
-        type: "Academic",
-        location: "Universitas Brawijaya",
-        start: "2026",
-        end: "Present",
-        description:
-            "Assisting students in understanding algorithm and data structure concepts through practical sessions and hands-on programming exercises.",
-        tasks: [
-            "Explain algorithm and data structure concepts",
-            "Guide students during practical sessions",
-            "Assist students with programming problems",
-            "Prepare and demonstrate programming case studies",
-        ],
-        technologies: [
-            "Java",
-            "Data Structures",
-            "Algorithms",
-            "Problem Solving",
-        ],
-    },
-    {
-        id: 4,
-        role: "Public Relations Staff",
-        company: "UKM Tapak Suci",
-        type: "Organization",
-        location: "Universitas Brawijaya",
-        start: "2025",
-        end: "2026",
-        description:
-            "Contributing to communication and public relations activities within the organization.",
-        tasks: [
-            "Coordinate internal and external communication",
-            "Support organizational events",
-            "Assist promotional activities",
-        ],
-        technologies: [
-            "Communication",
-            "Public Relations",
-            "Event Management",
-        ],
-    },
-];
+    if (total <= 1) {
+        return {
+            input: [0, 1],
+            y: [0, 0],
+            scale: [1, 1],
+            opacity: [1, 1],
+            zIndex,
+        };
+    }
 
+    // High-precision tuned preset for 4 experiences (100% solid, fully opaque)
+    if (total === 4) {
+        const presets = [
+            {
+                input: [0, 0.18, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
+                y: [0, 0, -14, -14, -26, -26, -36, -36],
+                scale: [1.0, 1.0, 0.96, 0.96, 0.92, 0.92, 0.88, 0.88],
+                opacity: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                zIndex: 10,
+            },
+            {
+                input: [0, 0.119, 0.12, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
+                y: [520, 520, 520, 0, 0, -14, -14, -26, -26],
+                scale: [0.94, 0.94, 0.94, 1.0, 1.0, 0.96, 0.96, 0.92, 0.92],
+                opacity: [0, 0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                zIndex: 20,
+            },
+            {
+                input: [0, 0.379, 0.38, 0.54, 0.69, 0.79, 1.0],
+                y: [520, 520, 520, 0, 0, -14, -14],
+                scale: [0.94, 0.94, 0.94, 1.0, 1.0, 0.96, 0.96],
+                opacity: [0, 0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                zIndex: 30,
+            },
+            {
+                input: [0, 0.639, 0.64, 0.80, 1.0],
+                y: [520, 520, 520, 0, 0],
+                scale: [0.94, 0.94, 0.94, 1.0, 1.0],
+                opacity: [0, 0, 1.0, 1.0, 1.0],
+                zIndex: 40,
+            },
+        ];
+        return presets[index] ?? presets[0];
+    }
+
+    // Dynamic keypoints generation for arbitrary N (100% solid, fully opaque)
+    const input: number[] = [0];
+    const y: number[] = [];
+    const scale: number[] = [];
+    const opacity: number[] = [];
+
+    if (index > 0) {
+        const startEnter = Math.max(0, (index - 0.7) / total);
+        const fullyEntered = index / total;
+
+        input.push(Math.max(0, startEnter - 0.001));
+        y.push(520);
+        scale.push(0.94);
+        opacity.push(0);
+
+        input.push(startEnter);
+        y.push(520);
+        scale.push(0.94);
+        opacity.push(1.0);
+
+        input.push(fullyEntered);
+        y.push(0);
+        scale.push(1.0);
+        opacity.push(1.0);
+    } else {
+        y.push(0);
+        scale.push(1.0);
+        opacity.push(1.0);
+    }
+
+    const activeUntil = (index + 0.7) / total;
+    if (activeUntil < 1.0 && index < total - 1) {
+        input.push(activeUntil);
+        y.push(0);
+        scale.push(1.0);
+        opacity.push(1.0);
+    }
+
+    for (let j = index + 1; j < total; j++) {
+        const coveredAt = (j + 0.15) / total;
+        const depth = j - index;
+        const targetY = -Math.min(36, depth * 14);
+        const targetScale = Math.max(0.86, 1.0 - depth * 0.04);
+
+        input.push(Math.min(1.0, coveredAt));
+        y.push(targetY);
+        scale.push(targetScale);
+        opacity.push(1.0);
+    }
+
+    if (input[input.length - 1] < 1.0) {
+        input.push(1.0);
+        y.push(y[y.length - 1]);
+        scale.push(scale[scale.length - 1]);
+        opacity.push(1.0);
+    }
+
+    return { input, y, scale, opacity, zIndex };
+}
+
+/* =====================================================
+   STACK CARD COMPONENT (SOLID LIGHT MODE FOR HIGH CONTRAST)
+   Renders an individual solid card within the layered card stack
+====================================================== */
+function StackCard({
+    experience,
+    index,
+    total,
+    scrollYProgress,
+}: {
+    experience: Experience;
+    index: number;
+    total: number;
+    scrollYProgress: MotionValue<number>;
+}) {
+    const config = getCardConfig(index, total);
+
+    // Smooth scroll-driven transformations
+    const y = useTransform(scrollYProgress, config.input, config.y);
+    const scale = useTransform(scrollYProgress, config.input, config.scale);
+    const opacity = useTransform(scrollYProgress, config.input, config.opacity);
+
+    return (
+        <motion.div
+            style={{
+                y,
+                scale,
+                opacity,
+                zIndex: config.zIndex,
+                transformOrigin: "top center",
+            }}
+            className="absolute inset-0 flex w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-white/80 bg-[#ECEFF4] p-6 sm:p-8 lg:p-9 xl:p-10 shadow-[0_22px_55px_rgba(0,0,0,0.38),0_4px_12px_rgba(0,0,0,0.15),0_-4px_16px_rgba(0,0,0,0.1)]"
+        >
+            <div className="relative z-10 flex h-full flex-col justify-between gap-5 sm:gap-6">
+                {/* Header: Company Badge, Role, Period */}
+                <div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#2E3440]/10 bg-white shadow-xs">
+                                <BriefcaseBusiness
+                                    size={14}
+                                    className="text-[#5E81AC]"
+                                />
+                            </span>
+                            <span className="text-xs uppercase tracking-[0.18em] font-bold text-[#5E81AC]">
+                                {experience.company}
+                            </span>
+                            <span className="text-[#2E3440]/30">•</span>
+                            <span className="text-[11px] uppercase tracking-wider font-semibold text-[#4C566A]">
+                                {experience.type}
+                            </span>
+                        </div>
+
+                        <div className="inline-flex items-center gap-1.5 rounded-full border border-[#2E3440]/10 bg-white px-3 py-1 text-xs font-medium text-[#4C566A] shadow-xs">
+                            <CalendarDays
+                                size={13}
+                                className="text-[#5E81AC]"
+                            />
+                            <span>
+                                {experience.start} — {experience.end}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h3 className="text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-[#2E3440] leading-tight">
+                        {experience.role}
+                    </h3>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px w-full bg-[#2E3440]/10" />
+
+                {/* Description */}
+                <div>
+                    <p className="mb-1.5 text-xs uppercase tracking-[0.2em] text-[#4C566A] font-semibold">
+                        About the role
+                    </p>
+                    <p className="text-xs sm:text-sm lg:text-base leading-relaxed text-[#3B4252] font-normal">
+                        {experience.description}
+                    </p>
+                </div>
+
+                {/* Responsibilities */}
+                {experience.tasks && experience.tasks.length > 0 && (
+                    <div>
+                        <p className="mb-2.5 text-xs uppercase tracking-[0.2em] text-[#4C566A] font-semibold">
+                            Responsibilities
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                            {experience.tasks.map((task, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex items-start gap-2.5 rounded-xl border border-[#2E3440]/[0.08] bg-white p-2.5 sm:p-3 shadow-xs transition-colors hover:border-[#5E81AC]/40"
+                                >
+                                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5E81AC]" />
+                                    <p className="text-xs sm:text-[13px] leading-relaxed text-[#3B4252] font-medium">
+                                        {task}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Bottom: Location */}
+                <div className="pt-2 flex items-center justify-between border-t border-[#2E3440]/10 mt-auto text-xs text-[#4C566A] font-medium">
+                    <div className="flex items-center gap-1.5">
+                        <MapPin size={13} className="text-[#5E81AC]" />
+                        <span>{experience.location}</span>
+                    </div>
+
+                    <span className="text-[11px] uppercase tracking-wider text-[#4C566A]/70 font-semibold">
+                        {experience.type}
+                    </span>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+/* =====================================================
+   MAIN EXPERIENCES COMPONENT
+   Connected dynamically to Turso Cloud Database
+====================================================== */
 export default function Experiences() {
-    const [activeId, setActiveId] = useState(experiences[0].id);
+    const { experiences } = useExperiences();
+    const lenis = useLenis();
+    const trackRef = useRef<HTMLDivElement>(null);
+    const isClickScrollingRef = useRef(false);
 
-    const activeExperience =
-        experiences.find((experience) => experience.id === activeId) ??
-        experiences[0];
+    const [activeId, setActiveId] = useState<number>(experiences[0]?.id ?? 1);
+
+    // Keep activeId synchronized whenever experiences array loads
+    useEffect(() => {
+        if (experiences.length > 0 && !experiences.some((exp) => exp.id === activeId)) {
+            setActiveId(experiences[0].id);
+        }
+    }, [experiences, activeId]);
+
+    const activeIndex = Math.max(
+        0,
+        experiences.findIndex((exp) => exp.id === activeId)
+    );
+
+    // Scroll progress of the sticky track (0 -> 1)
+    const { scrollYProgress } = useScroll({
+        target: trackRef,
+        offset: ["start start", "end end"],
+    });
+
+    // Update active experience smoothly on scroll
+    useMotionValueEvent(scrollYProgress, "change", (latest) => {
+        if (isClickScrollingRef.current || experiences.length === 0) return;
+
+        // Map [0, 1] across the N experiences from Turso
+        const rawIndex = Math.floor(latest * experiences.length);
+        const index = Math.min(experiences.length - 1, Math.max(0, rawIndex));
+        const currentTargetId = experiences[index]?.id;
+
+        if (currentTargetId && currentTargetId !== activeId) {
+            setActiveId(currentTargetId);
+        }
+    });
+
+    // Cancel programmatic scroll lock if user intervenes with manual wheel/touch
+    useEffect(() => {
+        const cancelClickScroll = () => {
+            isClickScrollingRef.current = false;
+        };
+
+        window.addEventListener("wheel", cancelClickScroll, { passive: true });
+        window.addEventListener("touchstart", cancelClickScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener("wheel", cancelClickScroll);
+            window.removeEventListener("touchstart", cancelClickScroll);
+        };
+    }, []);
+
+    // Smooth programmatic scroll directly to the selected experience stage
+    const scrollToExperience = (targetIndex: number) => {
+        if (!trackRef.current || experiences.length === 0) return;
+
+        isClickScrollingRef.current = true;
+        setActiveId(experiences[targetIndex].id);
+
+        const trackEl = trackRef.current;
+        const rect = trackEl.getBoundingClientRect();
+        const trackTop = window.scrollY + rect.top;
+        const totalScrollable = trackEl.offsetHeight - window.innerHeight;
+
+        // Target the center of that experience's scroll segment
+        const targetProgress = (targetIndex + 0.5) / experiences.length;
+        const targetScrollY = trackTop + totalScrollable * targetProgress;
+
+        if (lenis) {
+            lenis.scrollTo(targetScrollY, {
+                duration: 0.9,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                onComplete: () => {
+                    setTimeout(() => {
+                        isClickScrollingRef.current = false;
+                    }, 60);
+                },
+            });
+        } else {
+            window.scrollTo({
+                top: targetScrollY,
+                behavior: "smooth",
+            });
+            setTimeout(() => {
+                isClickScrollingRef.current = false;
+            }, 750);
+        }
+    };
+
+    // Accessible keyboard arrow key navigation
+    const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+            e.preventDefault();
+            const nextIndex = Math.min(experiences.length - 1, index + 1);
+            scrollToExperience(nextIndex);
+        } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            const prevIndex = Math.max(0, index - 1);
+            scrollToExperience(prevIndex);
+        }
+    };
+
+    const trackHeight = `${Math.max(2, experiences.length) * 100}vh`;
 
     return (
         <section
             id="experiences"
-            className="relative overflow-hidden bg-[#2E3440] py-24 text-white"
+            className="relative overflow-x-clip bg-[#2E3440] text-white scroll-mt-20"
         >
             {/* =====================================================
-                AMBIENT BACKGROUND
+                SCROLL TRACK (Multi-stage scroll canvas)
+                Height dynamically calculated from total Turso records
             ====================================================== */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -left-40 top-20 h-80 w-80 rounded-full bg-white/[0.025] blur-3xl" />
-
-                <div className="absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-white/[0.025] blur-3xl" />
-
-                {/* Stars */}
-                <div className="absolute left-[8%] top-[18%] h-1 w-1 rounded-full bg-white/20" />
-                <div className="absolute left-[88%] top-[22%] h-1 w-1 rounded-full bg-white/20" />
-                <div className="absolute left-[20%] bottom-[15%] h-1 w-1 rounded-full bg-white/15" />
-                <div className="absolute right-[12%] bottom-[25%] h-1.5 w-1.5 rounded-full bg-white/15" />
-            </div>
-
-            <div className="relative z-10 mx-auto max-w-7xl px-6 md:px-8">
-
+            <div
+                ref={trackRef}
+                style={{ height: trackHeight }}
+                className="relative z-10"
+            >
                 {/* =====================================================
-                    HEADER
+                    STICKY STAGE (Locked in viewport during exploration)
                 ====================================================== */}
-                <div className="mb-16">
-                    <div className="mb-5 flex items-center gap-3">
-                        <span className="h-px w-8 bg-white/30" />
-
-                        <span className="text-xs uppercase tracking-[0.25em] text-white/40">
-                            Experience
-                        </span>
-                    </div>
-
-                    <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-                        <div>
-                            <h2 className="text-4xl font-semibold tracking-tight md:text-5xl">
-                                Where I've
-                                <br />
-                                <span className="text-white/30">
-                                    been building.
-                                </span>
-                            </h2>
-                        </div>
-
-                        <p className="max-w-md text-sm leading-7 text-white/40">
-                            A collection of my academic, organizational, and
-                            development experiences where I continue to learn,
-                            collaborate, and build.
-                        </p>
-                    </div>
-                </div>
-
-                {/* =====================================================
-                    EXPERIENCE CONTENT
-                ====================================================== */}
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
-
-                    {/* =================================================
-                        LEFT TIMELINE
-                    ================================================== */}
-                    <div className="relative">
-
-                        {/* Vertical line */}
-                        <div className="absolute left-[15px] top-3 bottom-3 w-px bg-white/10" />
-
-                        <div className="space-y-2">
-                            {experiences.map((experience) => {
-                                const active =
-                                    experience.id === activeId;
-
-                                return (
-                                    <button
-                                        key={experience.id}
-                                        onClick={() =>
-                                            setActiveId(experience.id)
-                                        }
-                                        className={`
-                                            group
-                                            relative
-                                            flex
-                                            w-full
-                                            items-center
-                                            gap-4
-                                            rounded-2xl
-                                            px-2
-                                            py-4
-                                            text-left
-                                            transition-all
-                                            duration-300
-                                            ${
+                <div className="sticky top-0 flex h-screen min-h-dvh w-full flex-col justify-center overflow-hidden py-8 lg:py-12">
+                    <div className="relative z-10 w-full px-2 md:px-25">
+                        <div className="mx-auto w-full max-w-[1600px] px-6 md:px-8 lg:px-12">
+                            {/* =====================================================
+                                MOBILE / TABLET EXPERIENCE TABS (< lg)
+                            ====================================================== */}
+                            <div
+                                role="tablist"
+                                aria-label="Experiences navigation tabs"
+                                className="mb-6 flex lg:hidden items-center gap-2 overflow-x-auto no-scrollbar pb-1"
+                            >
+                                {experiences.map((experience, index) => {
+                                    const active = experience.id === activeId;
+                                    return (
+                                        <button
+                                            key={experience.id}
+                                            role="tab"
+                                            aria-selected={active}
+                                            aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
+                                            onClick={() => scrollToExperience(index)}
+                                            onKeyDown={(e) => handleKeyDown(e, index)}
+                                            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
                                                 active
-                                                    ? "bg-white/[0.05]"
-                                                    : "hover:bg-white/[0.025]"
-                                            }
-                                        `}
-                                    >
-                                        {/* Timeline dot */}
-                                        <span
-                                            className={`
-                                                relative
-                                                z-10
-                                                flex
-                                                h-7
-                                                w-7
-                                                shrink-0
-                                                items-center
-                                                justify-center
-                                                rounded-full
-                                                border
-                                                transition-all
-                                                ${
-                                                    active
-                                                        ? "border-white/30 bg-white/10"
-                                                        : "border-white/10 bg-[#2E3440]"
-                                                }
-                                            `}
+                                                    ? "border-[#88C0D0]/40 bg-[#88C0D0]/10 text-white"
+                                                    : "border-white/10 bg-white/[0.02] text-white/40 hover:text-white/70"
+                                            }`}
                                         >
-                                            <span
-                                                className={`
-                                                    h-1.5
-                                                    w-1.5
-                                                    rounded-full
-                                                    transition-all
-                                                    ${
-                                                        active
-                                                            ? "bg-white/80 shadow-[0_0_10px_rgba(255,255,255,0.3)]"
-                                                            : "bg-white/20"
-                                                    }
-                                                `}
-                                            />
-                                        </span>
+                                            {experience.company}
+                                        </button>
+                                    );
+                                })}
+                            </div>
 
-                                        <div className="min-w-0">
-                                            <p
-                                                className={`
-                                                    truncate
-                                                    text-sm
-                                                    font-medium
-                                                    transition
-                                                    ${
-                                                        active
-                                                            ? "text-white"
-                                                            : "text-white/40 group-hover:text-white/70"
-                                                    }
-                                                `}
+                            {/* =====================================================
+                                SHOWCASE COMPOSITION (2-COLUMN ON LG)
+                                1. Left: Experience List (Desktop vertical list preserved)
+                                2. Right: Scroll-Driven Card Stack (Dynamic Turso Stack)
+                            ====================================================== */}
+                            <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-12 lg:gap-8 xl:gap-12 2xl:gap-16 items-center">
+                                {/* =================================================
+                                    LEFT COLUMN — EXPERIENCE LIST (DESKTOP)
+                                    Fully preserved as edited by user
+                                ================================================== */}
+                                <div
+                                    role="tablist"
+                                    aria-label="Experiences list"
+                                    className="hidden lg:flex lg:col-span-4 flex-col justify-center space-y-4 sm:space-y-6 lg:space-y-8"
+                                >
+                                    {experiences.map((experience, index) => {
+                                        const active = experience.id === activeId;
+                                        const experienceNumber = index + 1;
+
+                                        return (
+                                            <button
+                                                key={experience.id}
+                                                role="tab"
+                                                aria-selected={active}
+                                                aria-label={`Experience ${experienceNumber}: ${experience.role} at ${experience.company}`}
+                                                tabIndex={active ? 0 : -1}
+                                                onClick={() => scrollToExperience(index)}
+                                                onKeyDown={(e) => handleKeyDown(e, index)}
+                                                className="group relative flex items-center text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#2E3440] rounded-xl"
                                             >
-                                                {experience.company}
-                                            </p>
+                                                <div className="relative flex items-center gap-4 lg:gap-5">
+                                                    {/* Elegant Active Indicator Bar */}
+                                                    <div className="relative flex h-8 sm:h-9 lg:h-11 w-1.5 items-center justify-center">
+                                                        {active ? (
+                                                            <motion.div
+                                                                layoutId="activeExperienceIndicator"
+                                                                className="h-full w-1.5 rounded-full bg-[#88C0D0]"
+                                                                transition={{
+                                                                    type: "spring",
+                                                                    stiffness: 400,
+                                                                    damping: 32,
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-white/20 transition-all duration-300 group-hover:scale-125 group-hover:bg-white/50" />
+                                                        )}
+                                                    </div>
 
-                                            <p className="mt-1 text-[11px] text-white/25">
-                                                {experience.start} —{" "}
-                                                {experience.end}
-                                            </p>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span
+                                                            className={`text-2xl sm:text-3xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-semibold transition-all duration-300 tracking-[-0.03em] leading-[1.15] ${
+                                                                active
+                                                                    ? "text-white translate-x-1"
+                                                                    : "text-white/25 hover:text-white/60"
+                                                            }`}
+                                                        >
+                                                            {experience.company}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
 
-                    {/* =================================================
-                        RIGHT EXPERIENCE CARD
-                    ================================================== */}
-                    <div
-                        className="
-                            relative
-                            min-h-[520px]
-                            overflow-hidden
-                            rounded-[2rem]
-                            border
-                            border-white/10
-                            bg-white/[0.035]
-                            p-7
-                            shadow-2xl
-                            backdrop-blur-xl
-                            md:p-9
-                        "
-                    >
-                        <Glass rounded="rounded-[2rem]" />
-
-                        <div className="relative z-10 flex h-full flex-col">
-
-                            {/* Top */}
-                            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-
-                                <div>
-                                    <div className="mb-4 flex items-center gap-2">
-                                        <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
-                                            <BriefcaseBusiness
-                                                size={15}
-                                                className="text-white/50"
+                                {/* =================================================
+                                    RIGHT COLUMN — SCROLL-DRIVEN CARD STACK
+                                    Dynamic Stack Cards from Turso
+                                ================================================== */}
+                                <div className="lg:col-span-8">
+                                    <div className="relative w-full h-[520px] sm:h-[540px] lg:h-[560px]">
+                                        {experiences.map((experience, index) => (
+                                            <StackCard
+                                                key={experience.id}
+                                                experience={experience}
+                                                index={index}
+                                                total={experiences.length}
+                                                scrollYProgress={scrollYProgress}
                                             />
-                                        </span>
-
-                                        <span className="text-xs uppercase tracking-[0.15em] text-white/30">
-                                            {activeExperience.type}
-                                        </span>
+                                        ))}
                                     </div>
-
-                                    <h3 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                                        {activeExperience.role}
-                                    </h3>
-
-                                    <p className="mt-2 text-sm text-white/50">
-                                        {activeExperience.company}
-                                    </p>
-                                </div>
-
-                                {/* Date */}
-                                <div className="flex items-center gap-2 text-xs text-white/30">
-                                    <CalendarDays size={14} />
-
-                                    <span>
-                                        {activeExperience.start} —{" "}
-                                        {activeExperience.end}
-                                    </span>
                                 </div>
                             </div>
 
-                            {/* Divider */}
-                            <div className="my-8 h-px bg-white/10" />
-
-                            {/* Description */}
-                            <div>
-                                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-white/25">
-                                    About the role
-                                </p>
-
-                                <p className="max-w-2xl text-sm leading-7 text-white/50">
-                                    {activeExperience.description}
-                                </p>
-                            </div>
-
-                            {/* Tasks */}
-                            <div className="mt-8">
-                                <p className="mb-4 text-xs uppercase tracking-[0.2em] text-white/25">
-                                    Responsibilities
-                                </p>
-
-                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                    {activeExperience.tasks.map(
-                                        (task, index) => (
-                                            <div
-                                                key={index}
-                                                className="
-                                                    flex
-                                                    gap-3
-                                                    rounded-xl
-                                                    border
-                                                    border-white/[0.06]
-                                                    bg-white/[0.025]
-                                                    p-3
-                                                "
-                                            >
-                                                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-white/30" />
-
-                                                <p className="text-xs leading-5 text-white/45">
-                                                    {task}
-                                                </p>
-                                            </div>
-                                        )
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Bottom */}
-                            <div className="mt-auto pt-8">
-
-                                <div className="mb-4 flex items-center gap-2 text-xs text-white/25">
-                                    <MapPin size={13} />
-
-                                    {activeExperience.location}
-                                </div>
-
-                                <div className="flex flex-wrap gap-2">
-                                    {activeExperience.technologies.map(
-                                        (technology) => (
-                                            <span
-                                                key={technology}
-                                                className="
-                                                    rounded-full
-                                                    border
-                                                    border-white/10
-                                                    bg-white/[0.03]
-                                                    px-3
-                                                    py-1.5
-                                                    text-[10px]
-                                                    text-white/40
-                                                "
-                                            >
-                                                {technology}
-                                            </span>
-                                        )
-                                    )}
-                                </div>
-                            </div>
+                            {/* Subtle Scroll Down Indicator on First Experience */}
+                            {activeIndex === 0 && experiences.length > 1 && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                    className="hidden lg:flex items-center gap-2 mt-8 text-[11px] uppercase tracking-[0.2em] text-white/25"
+                                >
+                                    <span>Scroll to explore timeline</span>
+                                    <ChevronDown size={13} className="animate-bounce text-[#88C0D0]/70" />
+                                </motion.div>
+                            )}
                         </div>
                     </div>
-                </div>
-
-                {/* =====================================================
-                    BOTTOM NAVIGATION
-                ====================================================== */}
-                <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-6">
-
-                    <p className="text-xs text-white/25">
-                        Experience{" "}
-                        <span className="text-white/50">
-                            0{activeExperience.id}
-                        </span>{" "}
-                        of{" "}
-                        <span className="text-white/50">
-                            0{experiences.length}
-                        </span>
-                    </p>
-
-                    <div className="flex gap-1.5">
-                        {experiences.map((experience) => (
-                            <button
-                                key={experience.id}
-                                onClick={() =>
-                                    setActiveId(experience.id)
-                                }
-                                aria-label={`Experience ${experience.id}`}
-                                className={`
-                                    h-1 rounded-full transition-all duration-300
-                                    ${
-                                        activeExperience.id ===
-                                        experience.id
-                                            ? "w-8 bg-white/50"
-                                            : "w-2 bg-white/10 hover:bg-white/25"
-                                    }
-                                `}
-                            />
-                        ))}
-                    </div>
-
-                    <span className="hidden text-xs text-white/25 md:block">
-                        Scroll to explore
-                        <ArrowUpRight
-                            size={12}
-                            className="ml-1 inline"
-                        />
-                    </span>
                 </div>
             </div>
         </section>

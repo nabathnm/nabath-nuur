@@ -1,5 +1,7 @@
 "use client"
 
+import { useLenis } from "@/lib/lenis"
+import Snap from "lenis/snap"
 import {
   motion,
   useAnimationFrame,
@@ -13,7 +15,7 @@ import {
   useTransform,
   useVelocity,
 } from "framer-motion"
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
+import { useEffect, useId, useRef, useSyncExternalStore } from "react"
 import { useProjects } from "../../hooks/useProjects"
 import Glass from "../ui/glass"
 
@@ -223,12 +225,12 @@ function SelectedWorkHeader({ count }: { count: number }) {
                 // = periode loop yang tepat (tanpa lompatan 32px)
                 className="flex shrink-0 items-center gap-8 pr-8"
               >
-                <span className="text-[clamp(3.5rem,13vw,12rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-white/90">
+                <span className="text-[clamp(3.5rem,13vw,12rem)] font-semibold leading-[0.9] tracking-tighter text-white/90">
                   Selected
                 </span>
 
                 <span
-                  className="text-[clamp(3.5rem,13vw,12rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-transparent"
+                  className="text-[clamp(3.5rem,13vw,12rem)] font-semibold leading-[0.9] tracking-tighter text-transparent"
                   style={{
                     WebkitTextStroke: "1px rgba(255,255,255,0.28)",
                   }}
@@ -336,7 +338,7 @@ function ProjectPanel({
     <article
       ref={ref}
       aria-label={project.title ?? `Project ${index + 1}`}
-      className="relative"
+      className="relative scroll-mt-28"
     >
       <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-center px-6 py-14 md:px-8 md:py-20 lg:px-12 lg:py-24">
         <div className="relative flex flex-col gap-6 lg:block lg:min-h-[78dvh]">
@@ -520,6 +522,75 @@ function ProjectList({
 export default function Projects() {
   const { projects, loading, error } = useProjects(3)
   const reduce = useReducedMotion() ?? false
+  const lenis = useLenis()
+
+  // Smooth Snap interpolasi via Lenis (tanpa konflik CSS Scroll Snap)
+  useEffect(() => {
+    if (!lenis || reduce || projects.length === 0) return
+
+    let isSnapping = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+    const handleScroll = () => {
+      if (isSnapping) return
+
+      if (timeoutId) clearTimeout(timeoutId)
+
+      // Tunggu hingga user selesai scroll dan kecepatan momentum melambat
+      timeoutId = setTimeout(() => {
+        // Jangan snap jika user masih scroll aktif / berkecepatan tinggi
+        if (Math.abs(lenis.velocity) > 0.15) return
+
+        const section = document.getElementById("projects")
+        if (!section) return
+
+        const secRect = section.getBoundingClientRect()
+        const vh = window.innerHeight
+
+        // Hanya aktifkan snap saat user sedang berada di area section projects
+        if (secRect.top > vh * 0.7 || secRect.bottom < vh * 0.3) return
+
+        const articles = section.querySelectorAll<HTMLElement>("article")
+        if (articles.length === 0) return
+
+        const navOffset = 80 // Kompensasi navbar fixed (px)
+
+        let closestArticle: HTMLElement | null = null
+        let minDistance = Infinity
+
+        articles.forEach((article) => {
+          const rect = article.getBoundingClientRect()
+          const distance = Math.abs(rect.top - navOffset)
+
+          // Proximity threshold: snap saat jarak ke project target < 32% tinggi layar
+          if (distance < vh * 0.32 && distance < minDistance) {
+            minDistance = distance
+            closestArticle = article
+          }
+        })
+
+        // Snap secara halus hanya jika belum pas di posisi target
+        if (closestArticle && minDistance > 6) {
+          isSnapping = true
+          lenis.scrollTo(closestArticle, {
+            offset: -navOffset,
+            duration: 0.9,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            onComplete: () => {
+              isSnapping = false
+            },
+          })
+        }
+      }, 140)
+    }
+
+    lenis.on("scroll", handleScroll)
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+      lenis.off("scroll", handleScroll)
+    }
+  }, [lenis, reduce, projects])
 
   if (loading) {
     return (

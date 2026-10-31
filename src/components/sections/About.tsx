@@ -1,17 +1,16 @@
 "use client"
 
 import { motion, useScroll, useSpring, useTransform, type Variants } from "framer-motion"
-import { useRef } from "react"
 import {
-  ArrowUpRight,
-  Smartphone,
   Globe2,
+  Smartphone
 } from "lucide-react"
+import { useRef } from "react"
 import ScrollMaskCard, { ScrollReveal } from "../ScrollMaskCard"
 
 // Ganti dengan path foto kamu (mis. di folder /public). Jika file tidak ada,
 // card otomatis menampilkan gradient Nord sebagai fallback.
-const PROFILE_IMAGE = "/images/profile.jpg"
+const PROFILE_IMAGE = "https://supabase.com/dashboard/project/dgapjusikgybitsessku/storage/files/buckets/projects?preview=jowoki.jpg"
 
 const floatVariants: Variants = {
   animate: {
@@ -24,7 +23,7 @@ const floatVariants: Variants = {
   },
 }
 
-const skills = [
+const _skills = [
   "React",
   "Next.js",
   "TypeScript",

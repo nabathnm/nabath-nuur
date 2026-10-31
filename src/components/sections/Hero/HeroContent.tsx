@@ -1,5 +1,6 @@
-import { Code2, ArrowUpRight, ArrowDown } from "lucide-react";
-import { motion, type Variants } from "framer-motion"
+import { motion, type Variants } from "framer-motion";
+import { ArrowDown, ArrowUpRight, Code2 } from "lucide-react";
+import TechHeading from "./TechHeading";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -39,6 +40,12 @@ const floatingVariants: Variants = {
   },
 }
 
+// Heading: dua baris, dianimasikan berurutan oleh TechHeading.
+const HEADING_LINES = [
+  { text: "Transforming ideas" },
+  { text: "into digital experiences.", className: "text-white/35" },
+]
+
 export default function Hero() {
     return (
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-7rem)] max-w-7xl items-center px-6 pb-20 md:px-8">
@@ -62,13 +69,13 @@ export default function Hero() {
                 I build digital products
               </p>
 
-              <h1 className="text-5xl font-semibold leading-[1.05] tracking-[-0.04em] sm:text-6xl md:text-7xl lg:text-[58px]">
-                Transforming ideas
-                <br />
-                <span className="text-white/35">
-                  into digital experiences.
-                </span>
-              </h1>
+              <TechHeading
+                as="h1"
+                lines={HEADING_LINES}
+                className="text-5xl font-semibold leading-[1.05] tracking-[-0.04em] sm:text-6xl md:text-7xl lg:text-[58px]"
+                accent="#88C0D0"
+                introDelay={0.45}
+              />
             </motion.div>
 
             {/* Floating code badge */}
