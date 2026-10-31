@@ -1,12 +1,14 @@
 import { motion } from "framer-motion"
 
 import Navbar from "./components/layout/Navbar"
-import Projects from "./components/sections/Projects"
 import About from "./components/sections/About"
-import Tools from "./components/sections/Tools"
+import Experiences from "./components/sections/Experiences"
 import Footer from "./components/sections/Footer"
 import Hero from "./components/sections/Hero"
-import Experiences from "./components/sections/Experiences"
+import Projects from "./components/sections/Projects"
+import Services from "./components/sections/Services"
+import Tools from "./components/sections/Tools"
+import UfoCursor from "./components/ui/UfoCursor"
 
 export function App() {
   return (
@@ -44,11 +46,15 @@ export function App() {
       <div className="relative z-10">
         <Hero />
         <About />
-        {/* <Tools /> */}
+        <Services />
+        <Tools />
         <Projects />
         <Experiences />
         <Footer />
       </div>
+
+      {/* Smooth Cursor-Following UFO Companion */}
+      <UfoCursor />
     </div>
   )
 }

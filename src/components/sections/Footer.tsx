@@ -22,7 +22,7 @@ export default function Footer() {
   return (
     <footer
       id="contact"
-      className="relative mt-20 overflow-hidden border-t border-white/10 bg-transparent text-white scroll-mt-28"
+      className="relative mt-20 overflow-hidden border-t border-white/10 bg-transparent text-white"
     >
       {/* Ambient glow */}
       <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-white/5 blur-3xl" />

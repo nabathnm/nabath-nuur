@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { useLenis } from "@/lib/lenis"
 import Glass from "@/components/ui/glass"
 
 const navItems = [
   { name: "About", href: "#about" },
+  { name: "Services", href: "#services" },
   { name: "Tools", href: "#tools" },
   { name: "Projects", href: "#projects" },
   { name: "Experiences", href: "#experiences" },
@@ -17,40 +19,46 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
-  // Handle scroll effects & active section detection via IntersectionObserver
+  // Handle scroll effects & active section detection
   useEffect(() => {
-    // Use Lenis scroll event when available, fallback to window scroll
     function handleScroll({ scroll }: { scroll: number }) {
-      setScrolled(scroll > 20)
+      const currentScroll = scroll ?? window.scrollY
+      setScrolled(currentScroll > 20)
+
+      // Jika user sudah berada di paling bawah dokumen, pilih Contact
+      if (
+        window.innerHeight + currentScroll >=
+        document.documentElement.scrollHeight - 60
+      ) {
+        setActiveSection("contact")
+        return
+      }
+
+      const sections = document.querySelectorAll<HTMLElement>("section[id], footer[id]")
+      const scrollPosition = currentScroll + 200
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const sec = sections[i]
+        if (sec.offsetTop <= scrollPosition) {
+          setActiveSection(sec.id)
+          break
+        }
+      }
     }
+
+    // Panggil sekali saat mount untuk sinkronisasi posisi awal
+    handleScroll({ scroll: window.scrollY })
 
     if (lenis) {
       lenis.on("scroll", handleScroll)
     } else {
-      const fallback = () => setScrolled(window.scrollY > 20)
+      const fallback = () => handleScroll({ scroll: window.scrollY })
       window.addEventListener("scroll", fallback)
       return () => window.removeEventListener("scroll", fallback)
     }
 
-    const sections = document.querySelectorAll("section[id], footer[id]")
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id)
-          }
-        })
-      },
-      {
-        rootMargin: "-20% 0px -60% 0px",
-      }
-    )
-
-    sections.forEach((section) => observer.observe(section))
-
     return () => {
       if (lenis) lenis.off("scroll", handleScroll)
-      observer.disconnect()
     }
   }, [lenis])
 
@@ -60,12 +68,27 @@ export default function Navbar() {
   ) => {
     e.preventDefault()
     const targetId = href.replace("#", "")
+    setActiveSection(targetId)
+
+    if (targetId === "home") {
+      if (lenis) {
+        lenis.scrollTo(0, {
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        })
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      }
+      setMobileMenuOpen(false)
+      return
+    }
+
     const element = document.getElementById(targetId)
     if (element) {
       if (lenis) {
         lenis.scrollTo(element, {
-          offset: -80, // Kompensasi tinggi navbar fixed
-          duration: 1.4,
+          offset: 0,
+          duration: 1.2,
           easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         })
       } else {
@@ -87,7 +110,7 @@ export default function Navbar() {
       >
         <Glass rounded="rounded-full" />
 
-        {/* Logo */}
+        {/* Logo (Kiri) */}
         <a
           href="#home"
           onClick={(e) => handleNavClick(e, "#home")}
@@ -96,29 +119,39 @@ export default function Navbar() {
           Nabath<span className="text-white/40">.</span>
         </a>
 
-        {/* Desktop Links */}
-        <div className="relative z-10 hidden items-center gap-1 md:flex">
-          {navItems.map((item) => {
-            const isActive = activeSection === item.href.replace("#", "")
-            return (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-white/15 text-white shadow-sm"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {item.name}
-              </a>
-            )
-          })}
-        </div>
-
-        {/* Right CTA / Mobile Toggle */}
+        {/* Right Section (Kanan): Desktop Links & Mobile Menu Toggle */}
         <div className="relative z-10 flex items-center gap-3">
+          {/* Desktop Links */}
+          <div className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => {
+              const isActive = activeSection === item.href.replace("#", "")
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className={`relative rounded-full px-4 py-1.5 text-xs font-medium transition-colors duration-200 ${
+                    isActive
+                      ? "text-white"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="navbar-active-pill"
+                      className="absolute inset-0 rounded-full bg-white/15 border border-white/10 shadow-sm backdrop-blur-sm"
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.name}</span>
+                </a>
+              )
+            })}
+          </div>
 
           {/* Mobile Menu Toggle Button */}
           <button
@@ -144,13 +177,24 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={`rounded-2xl px-5 py-3 text-sm font-medium transition-all ${
+                  className={`relative rounded-2xl px-5 py-3 text-sm font-medium transition-colors duration-200 ${
                     isActive
-                      ? "bg-white/15 text-white"
-                      : "text-white/70 hover:bg-white/5 hover:text-white"
+                      ? "text-white"
+                      : "text-white/70 hover:text-white"
                   }`}
                 >
-                  {item.name}
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-navbar-active-pill"
+                      className="absolute inset-0 rounded-2xl bg-white/15 border border-white/10"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.name}</span>
                 </a>
               )
             })}

@@ -8,236 +8,382 @@ import {
   useReducedMotion,
   useTransform,
   type AnimationPlaybackControls,
-  type MotionValue,
 } from "framer-motion";
-import { Code2 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /* =====================================================
-   CONFIG
+   TYPES & CONFIG
 ====================================================== */
-
-const ORBIT = {
-  tiltDeg: -14, // kemiringan elips (sumbu tetap, hanya ikon yang bergerak)
-  ratio: 0.32, // radiusY / radiusX
-  duration: 40, // detik per putaran
-  maxRadiusX: 390,
-  minRadiusX: 110,
-  edgePadding: 52, // ruang untuk ikon + tooltip di tepi container
-};
-
-const TILT = (ORBIT.tiltDeg * Math.PI) / 180;
-const COS_T = Math.cos(TILT);
-const SIN_T = Math.sin(TILT);
-const TAU = Math.PI * 2;
 
 type Tool = ReturnType<typeof useTools>["tools"][number];
 
-const useIsoLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+/** Jarak geser maksimum di luar area tampil (px) — membatasi "infinity". */
+const TRAVEL = {
+  factor: 0.5, // × ukuran frame
+  minX: 160,
+  maxX: 480,
+  minY: 160,
+  maxY: 360,
+};
 
-/** Titik pada elips miring untuk sudut `angle` (radian). */
-function pointOnOrbit(angle: number, rx: number, ry: number) {
-  const ex = Math.cos(angle) * rx;
-  const ey = Math.sin(angle) * ry;
+const DOT_PERIOD = 28; // jarak titik latar (px)
+
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
+
+/** Hasil di rentang [-period, 0], kontinu → dipakai untuk latar titik. */
+function wrap(val: number, period: number): number {
+  const mod = val % period;
+  return mod <= 0 ? mod : mod - period;
+}
+
+interface GridConfig {
+  tile: number;
+  gap: number;
+  pitch: number;
+  cols: number; // kolom pola dasar
+  rows: number; // baris pola dasar
+  boardCols: number; // total kolom board (terbatas)
+  boardRows: number;
+  boardW: number;
+  boardH: number;
+}
+
+/**
+ * Board berhingga: area tampil + jarak geser terbatas (TRAVEL).
+ * Jumlah node DOM = boardCols × boardRows, tidak tumbuh tanpa batas.
+ */
+function computeGrid(w: number, h: number, toolCount: number): GridConfig {
+  const tile = w < 640 ? 56 : w < 1024 ? 64 : 72;
+  const gap = w < 640 ? 16 : w < 1024 ? 20 : 24;
+  const pitch = tile + gap;
+
+  const cols = clamp(
+    Math.ceil(Math.sqrt(toolCount * (w < 640 ? 1.0 : 1.4))),
+    3,
+    Math.max(toolCount, 3)
+  );
+  const rows = Math.max(3, Math.ceil(toolCount / cols));
+
+  const travelX = clamp(w * TRAVEL.factor, TRAVEL.minX, TRAVEL.maxX);
+  const travelY = clamp(h * TRAVEL.factor, TRAVEL.minY, TRAVEL.maxY);
+
+  const boardCols = Math.ceil((w + travelX) / pitch);
+  const boardRows = Math.ceil((h + travelY) / pitch);
+
   return {
-    x: ex * COS_T - ey * SIN_T,
-    y: ex * SIN_T + ey * COS_T,
+    tile,
+    gap,
+    pitch,
+    cols,
+    rows,
+    boardCols,
+    boardRows,
+    boardW: boardCols * pitch,
+    boardH: boardRows * pitch,
   };
 }
 
-/* =====================================================
-   ORBIT ITEM
-====================================================== */
-
-interface OrbitItemProps {
-  tool: Tool;
-  index: number;
-  total: number;
-  phase: MotionValue<number>;
-  rx: MotionValue<number>;
-  ry: MotionValue<number>;
-}
-
-function OrbitItem({ tool, index, total, phase, rx, ry }: OrbitItemProps) {
-  const [hovered, setHovered] = useState(false);
-  const offset = (index / total) * TAU; // tersebar merata
-
-  const x = useTransform([phase, rx, ry], (v: number[]) =>
-    pointOnOrbit(v[0] + offset, v[1], v[2]).x
-  );
-  const y = useTransform([phase, rx, ry], (v: number[]) =>
-    pointOnOrbit(v[0] + offset, v[1], v[2]).y
-  );
-
-  // Kedalaman semu: ikon di sisi depan (bawah) sedikit lebih besar & terang.
-  const depth = useTransform([phase, rx, ry], (v: number[]) => {
-    const p = pointOnOrbit(v[0] + offset, v[1], v[2]);
-    const extent = v[2] + v[1] * Math.abs(SIN_T) || 1;
-    return Math.max(-1, Math.min(1, p.y / extent));
-  });
-  const scale = useTransform(depth, [-1, 1], [0.88, 1.04]);
-  const opacity = useTransform(depth, [-1, 1], [0.7, 1]);
-  const zIndex = useTransform(depth, (d: number) => Math.round(20 + d * 10));
-
-  return (
-    <motion.div
-      className="absolute left-1/2 top-1/2"
-      style={{ x, y, zIndex: hovered ? 100 : zIndex }}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-    >
-      {/* Pusatkan ikon pada titik orbit; tidak ikut berputar → selalu tegak */}
-      <motion.div
-        className="-translate-x-1/2 -translate-y-1/2"
-        style={{ scale, opacity }}
-      >
-        <div
-          className="group relative"
-          tabIndex={0}
-          role="img"
-          aria-label={tool.name}
-          onFocus={() => setHovered(true)}
-          onBlur={() => setHovered(false)}
-        >
-          {/* Hover glow */}
-          <div className="pointer-events-none absolute -inset-3 rounded-[1.75rem] bg-[#88c0d0]/0 blur-xl transition-all duration-500 group-hover:bg-[#88c0d0]/25 group-focus:bg-[#88c0d0]/25" />
-
-          {/* Glass icon */}
-          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#2e3440]/70 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-300 group-hover:scale-110 group-hover:border-[#88c0d0]/50 group-hover:bg-[#3b4252]/80 group-hover:shadow-[0_0_30px_rgba(136,192,208,0.18)] group-focus:scale-110 group-focus:border-[#88c0d0]/50 sm:h-[68px] sm:w-[68px]">
-            <div
-              className="h-7 w-7 text-white/80 transition-colors duration-300 group-hover:text-[#88c0d0] group-focus:text-[#88c0d0] sm:h-9 sm:w-9 [&>svg]:h-full [&>svg]:w-full"
-              dangerouslySetInnerHTML={{ __html: tool.svg }}
-            />
-          </div>
-
-          {/* Tooltip */}
-          <div className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-lg border border-white/10 bg-[#2e3440]/90 px-3 py-1.5 text-xs text-white/75 opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus:translate-y-0 group-focus:opacity-100">
-            {tool.name}
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+const WHEEL_SPRING = {
+  type: "spring" as const,
+  stiffness: 240,
+  damping: 32,
+  mass: 0.7,
+};
 
 /* =====================================================
-   ORBIT
+   DRAGGABLE GRID (BERHINGGA, TANPA EFEK HOVER)
 ====================================================== */
 
-function ToolsOrbit({ tools }: { tools: Tool[] }) {
-  const shouldReduceMotion = useReducedMotion();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<AnimationPlaybackControls | null>(null);
+function ToolsGrid({ tools }: { tools: Tool[] }) {
+  const reduce = useReducedMotion() ?? false;
+  const frameRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
 
-  // Semua nilai yang berubah-ubah berada di motion value → tanpa re-render.
-  const phase = useMotionValue(0);
-  const rx = useMotionValue(ORBIT.maxRadiusX);
-  const ry = useMotionValue(ORBIT.maxRadiusX * ORBIT.ratio);
+  // Satu-satunya state: ukuran frame (berubah hanya saat resize).
+  const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // Responsif: radius mengikuti lebar container.
-  useIsoLayoutEffect(() => {
-    const el = containerRef.current;
+  // Posisi board — motion value, tanpa re-render saat drag / wheel.
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const draggingRef = useRef(false);
+  const currentTileRef = useRef<HTMLElement | null>(null);
+  const boundsRef = useRef({ minX: 0, minY: 0 });
+  const wheelRef = useRef({ x: 0, t: 0 });
+  const ctrlRef = useRef<{
+    x?: AnimationPlaybackControls;
+    y?: AnimationPlaybackControls;
+  }>({});
+  const initializedRef = useRef(false);
+
+  const grid = useMemo(
+    () =>
+      size.w > 0 && tools.length > 0
+        ? computeGrid(size.w, size.h, tools.length)
+        : null,
+    [size.w, size.h, tools.length]
+  );
+
+  const minX = grid ? -(grid.boardW - size.w) : 0;
+  const minY = grid ? -(grid.boardH - size.h) : 0;
+
+  // Latar titik: digeser lewat transform (compositor), bukan background-position.
+  const dotsX = useTransform(x, (v: number) => wrap(v * 0.35, DOT_PERIOD));
+  const dotsY = useTransform(y, (v: number) => wrap(v * 0.35, DOT_PERIOD));
+
+  /* ---------- ukuran frame ---------- */
+  useEffect(() => {
+    const el = frameRef.current;
     if (!el) return undefined;
 
     const update = () => {
-      const r = Math.max(
-        ORBIT.minRadiusX,
-        Math.min(ORBIT.maxRadiusX, el.clientWidth / 2 - ORBIT.edgePadding)
-      );
-      rx.set(r);
-      ry.set(r * ORBIT.ratio);
+      const w = Math.round(el.clientWidth);
+      const h = Math.round(el.clientHeight);
+      setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
     };
 
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [rx, ry]);
+  }, []);
 
-  // Gerakan orbit kontinu (dilewati jika reduced motion).
+  /* ---------- batas & posisi awal (board di tengah) ---------- */
   useEffect(() => {
-    if (shouldReduceMotion) {
-      phase.set(0);
-      return undefined;
+    if (!grid) return;
+    boundsRef.current = { minX, minY };
+
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      x.set(minX / 2);
+      y.set(minY / 2);
+    } else {
+      x.set(clamp(x.get(), minX, 0));
+      y.set(clamp(y.get(), minY, 0));
     }
+  }, [grid, minX, minY, x, y]);
 
-    const controls = animate(phase, TAU, {
-      duration: ORBIT.duration,
-      ease: "linear",
-      repeat: Infinity,
-      repeatType: "loop",
-    });
-    controlsRef.current = controls;
+  const stopAnimations = useCallback(() => {
+    ctrlRef.current.x?.stop();
+    ctrlRef.current.y?.stop();
+    x.stop();
+    y.stop();
+  }, [x, y]);
 
-    return () => {
-      controls.stop();
-      controlsRef.current = null;
+  /* ---------- wheel / trackpad (horizontal) ---------- */
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return undefined;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) return;
+
+      let dx = e.deltaX;
+      let dy = e.deltaY;
+      if (e.shiftKey && dx === 0) {
+        dx = dy;
+        dy = 0;
+      }
+      if (e.deltaMode === 1) dx *= 16;
+
+      // Scroll vertikal dibiarkan untuk halaman.
+      if (Math.abs(dx) <= Math.abs(dy)) return;
+      e.preventDefault();
+
+      hideTip();
+
+      const now = performance.now();
+      const w = wheelRef.current;
+      if (now - w.t > 160) {
+        stopAnimations();
+        w.x = x.get();
+      }
+      w.t = now;
+      w.x = clamp(w.x - dx, boundsRef.current.minX, 0);
+
+      if (reduce) {
+        x.set(w.x);
+        return;
+      }
+      ctrlRef.current.x?.stop();
+      ctrlRef.current.x = animate(x, w.x, WHEEL_SPRING);
     };
-  }, [phase, shouldReduceMotion]);
 
-  // Cincin lintasan mengikuti radius responsif (sumbu tetap, miring).
-  const ringW = useTransform(rx, (v: number) => v * 2);
-  const ringH = useTransform(ry, (v: number) => v * 2);
-  const outerW = useTransform(rx, (v: number) => v * 2 + 90);
-  const outerH = useTransform(ry, (v: number) => v * 2 + 90);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [x, reduce, stopAnimations]);
+
+  /* ---------- tooltip imperatif (tanpa state / re-render) ---------- */
+  function hideTip() {
+    currentTileRef.current = null;
+    if (tipRef.current) tipRef.current.style.opacity = "0";
+  }
+
+  function showTip(el: HTMLElement) {
+    const tip = tipRef.current;
+    const frame = frameRef.current;
+    if (!tip || !frame || currentTileRef.current === el) return;
+    currentTileRef.current = el;
+
+    tip.textContent = el.dataset.name ?? "";
+
+    const f = frame.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const half = tip.offsetWidth / 2;
+    const left = clamp(r.left + r.width / 2 - f.left, half + 8, f.width - half - 8);
+    const above = r.top - f.top > 44;
+
+    tip.style.left = `${left}px`;
+    tip.style.top = `${above ? r.top - f.top - 10 : r.bottom - f.top + 10}px`;
+    tip.style.transform = above ? "translate(-50%,-100%)" : "translate(-50%,0)";
+    tip.style.opacity = "1";
+  }
+
+  const tileFrom = (target: EventTarget | null) =>
+    (target as HTMLElement | null)?.closest<HTMLElement>("[data-name]") ?? null;
+
+  const onPointerOver = (e: React.PointerEvent) => {
+    if (draggingRef.current || e.pointerType === "touch") return;
+    const tile = tileFrom(e.target);
+    if (tile) showTip(tile);
+  };
+
+  const onPointerOut = (e: React.PointerEvent) => {
+    const next = tileFrom(e.relatedTarget);
+    if (next !== currentTileRef.current) hideTip();
+  };
+
+  const onFocus = (e: React.FocusEvent) => {
+    const tile = tileFrom(e.target);
+    if (!tile) return;
+    showTip(tile);
+
+    // Pan ke ikon hanya untuk navigasi keyboard.
+    if (!tile.matches(":focus-visible")) return;
+    const tx = clamp(size.w / 2 - (tile.offsetLeft + tile.offsetWidth / 2), minX, 0);
+    const ty = clamp(size.h / 2 - (tile.offsetTop + tile.offsetHeight / 2), minY, 0);
+    stopAnimations();
+    if (reduce) {
+      x.set(tx);
+      y.set(ty);
+      return;
+    }
+    ctrlRef.current.x = animate(x, tx, WHEEL_SPRING);
+    ctrlRef.current.y = animate(y, ty, WHEEL_SPRING);
+  };
+
+  /* ---------- tile (statis, dibuat sekali per layout) ---------- */
+  const tiles = useMemo(() => {
+    if (!grid) return [];
+    const n = tools.length;
+    const list = [];
+
+    for (let r = 0; r < grid.boardRows; r++) {
+      for (let c = 0; c < grid.boardCols; c++) {
+        const idx = ((r % grid.rows) * grid.cols + (c % grid.cols)) % n;
+        const tool = tools[idx];
+        // Hanya satu salinan per tool yang fokus/terbaca screen reader.
+        const primary = r < grid.rows && c < grid.cols && r * grid.cols + c < n;
+
+        list.push(
+          <div
+            key={`${r}-${c}`}
+            data-name={tool.name}
+            tabIndex={primary ? 0 : -1}
+            role={primary ? "img" : undefined}
+            aria-label={primary ? tool.name : undefined}
+            aria-hidden={primary ? undefined : true}
+            className="absolute flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0]"
+            style={{
+              left: c * grid.pitch + grid.gap / 2,
+              top: r * grid.pitch + grid.gap / 2,
+              width: grid.tile,
+              height: grid.tile,
+            }}
+          >
+            <div
+              className="h-1/2 w-1/2 text-white/75 [&>svg]:h-full [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: tool.svg }}
+            />
+          </div>
+        );
+      }
+    }
+    return list;
+  }, [grid, tools]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative mx-auto flex h-[380px] w-full max-w-[1100px] items-center justify-center overflow-visible sm:h-[480px]"
-      onPointerEnter={(e) => {
-        if (e.pointerType === "mouse") controlsRef.current?.pause();
-      }}
-      onPointerLeave={(e) => {
-        if (e.pointerType === "mouse") controlsRef.current?.play();
-      }}
-    >
-      {/* Orbit path (elips miring, tetap) */}
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 rounded-[50%] border border-white/[0.10]"
-        style={{ width: ringW, height: ringH, x: "-50%", y: "-50%", rotate: ORBIT.tiltDeg }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 rounded-[50%] border border-white/[0.04]"
-        style={{ width: outerW, height: outerH, x: "-50%", y: "-50%", rotate: ORBIT.tiltDeg }}
-      />
-
-      {/* Tools (posisi dihitung sepanjang elips) */}
-      {tools.map((tool, index) => (
-        <OrbitItem
-          key={tool.id}
-          tool={tool}
-          index={index}
-          total={tools.length}
-          phase={phase}
-          rx={rx}
-          ry={ry}
+    <div className="flex flex-1 min-h-0 w-full flex-col">
+      <div
+        ref={frameRef}
+        className="relative flex-1 min-h-[380px] w-full touch-none select-none overflow-hidden border-y border-white/10"
+        style={{ cursor: "grab" }}
+      >
+        {/* Latar titik berparalaks (hanya transform) */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-14 will-change-transform"
+          style={{
+            x: dotsX,
+            y: dotsY,
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1.4px)",
+            backgroundSize: `${DOT_PERIOD}px ${DOT_PERIOD}px`,
+          }}
         />
-      ))}
 
-      {/* Center hub */}
-      <div className="relative z-10 flex h-28 w-28 flex-col items-center justify-center rounded-full border border-white/10 bg-[#2e3440]/80 shadow-[0_0_60px_rgba(136,192,208,0.08)] backdrop-blur-xl sm:h-32 sm:w-32">
-        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl border border-[#88c0d0]/20 bg-[#88c0d0]/10 text-[#88c0d0]">
-          <Code2 size={22} />
-        </div>
+        {/* Board berhingga: drag bawaan Framer (momentum + edge resistance) */}
+        {grid && (
+          <motion.div
+            drag
+            dragConstraints={{ left: minX, right: 0, top: minY, bottom: 0 }}
+            dragElastic={reduce ? 0 : 0.12}
+            dragMomentum={!reduce}
+            dragTransition={{
+              power: 0.4,
+              timeConstant: 320,
+              bounceStiffness: 260,
+              bounceDamping: 32,
+            }}
+            onPointerDown={() => {
+              ctrlRef.current.x?.stop();
+              ctrlRef.current.y?.stop();
+            }}
+            onDragStart={() => {
+              draggingRef.current = true;
+              hideTip();
+              if (frameRef.current) frameRef.current.style.cursor = "grabbing";
+            }}
+            onDragEnd={() => {
+              draggingRef.current = false;
+              if (frameRef.current) frameRef.current.style.cursor = "grab";
+            }}
+            onPointerOver={onPointerOver}
+            onPointerOut={onPointerOut}
+            onFocus={onFocus}
+            onBlur={hideTip}
+            className="absolute left-0 top-0 transform-gpu will-change-transform"
+            style={{ x, y, width: grid.boardW, height: grid.boardH }}
+          >
+            {tiles}
+          </motion.div>
+        )}
 
-        <span className="text-xs font-semibold tracking-[0.2em] text-white/80">
-          STACK
-        </span>
-
-        <span className="mt-1 text-[10px] text-white/40">
-          {tools.length} tools
-        </span>
+        {/* Satu tooltip untuk semua ikon */}
+        <div
+          ref={tipRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute z-30 whitespace-nowrap rounded-lg border border-white/15 bg-[#2E3440] px-3 py-1.5 text-xs font-medium text-white transition-opacity duration-150"
+          style={{ opacity: 0 }}
+        />
       </div>
     </div>
   );
 }
 
 /* =====================================================
-   SECTION
+   MAIN SECTION COMPONENT (1 FULL PAGE WEB)
 ====================================================== */
 
 export default function Tools() {
@@ -245,7 +391,10 @@ export default function Tools() {
 
   if (loading) {
     return (
-      <section className="flex min-h-[500px] items-center justify-center">
+      <section
+        id="tools"
+        className="flex h-screen min-h-dvh w-full items-center justify-center bg-transparent text-white"
+      >
         <p className="text-sm text-white/50">Loading tools...</p>
       </section>
     );
@@ -253,7 +402,10 @@ export default function Tools() {
 
   if (error) {
     return (
-      <section className="flex min-h-[500px] items-center justify-center">
+      <section
+        id="tools"
+        className="flex h-screen min-h-dvh w-full items-center justify-center bg-transparent text-white"
+      >
         <p className="text-sm text-red-400">{error}</p>
       </section>
     );
@@ -262,12 +414,16 @@ export default function Tools() {
   if (!tools.length) return null;
 
   return (
-    <section className="relative overflow-hidden py-24">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[700px] max-w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#88c0d0]/[0.04] blur-[120px]" />
+    <section
+      id="tools"
+      className="relative flex h-screen min-h-dvh w-full flex-col justify-between overflow-hidden bg-[#2E3440] text-white"
+    >
+      {/* Background ambient glow */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[900px] max-w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#88c0d0]/[0.03] blur-[140px]" />
 
-      <div className="relative mx-auto max-w-7xl px-6">
-        <ToolsOrbit tools={tools} />
+      {/* Full-width draggable canvas with outline border */}
+      <div className="relative z-10 flex flex-1 min-h-0 w-full flex-col">
+        <ToolsGrid tools={tools} />
       </div>
     </section>
   );

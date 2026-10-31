@@ -1,7 +1,6 @@
 "use client"
 
 import { useLenis } from "@/lib/lenis"
-import Snap from "lenis/snap"
 import {
   motion,
   useAnimationFrame,
@@ -15,7 +14,9 @@ import {
   useTransform,
   useVelocity,
 } from "framer-motion"
-import { useEffect, useId, useRef, useSyncExternalStore } from "react"
+import Snap from "lenis/snap"
+import { useEffect, useId, useRef } from "react"
+import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import { useProjects } from "../../hooks/useProjects"
 import Glass from "../ui/glass"
 
@@ -39,21 +40,6 @@ const MAX_FEATURES = 4
  * Angka lebih kecil membuat reveal berlangsung lebih lama.
  */
 const IMAGE_REVEAL_OFFSET = "10%"
-
-/** Media query tanpa re-render per scroll. */
-function useMediaQuery(query: string) {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mql = window.matchMedia(query)
-
-      mql.addEventListener("change", onChange)
-
-      return () => mql.removeEventListener("change", onChange)
-    },
-    () => window.matchMedia(query).matches,
-    () => false
-  )
-}
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -190,18 +176,6 @@ function SelectedWorkHeader({ count }: { count: number }) {
         aria-hidden="true"
         focusable="false"
       >
-        {/* <defs>
-          <filter
-            id={filterId}
-            x="-10%"
-            y="0%"
-            width="120%"
-            height="100%"
-            colorInterpolationFilters="sRGB"
-          >
-            <feGaussianBlur ref={blurNodeRef} stdDeviation="0 0" />
-          </filter>
-        </defs> */}
       </svg>
 
       {/* Scrolling text */}
@@ -238,12 +212,8 @@ function SelectedWorkHeader({ count }: { count: number }) {
                   Work
                 </span>
 
-                <span
-                  className="h-3 w-3 shrink-0 rounded-full md:h-4 md:w-4"
-                  style={{
-                    backgroundColor: ACCENT,
-                    opacity: 0.7,
-                  }}
+                <CatHeadPointer
+                  className="h-[clamp(2rem,6vw,5.5rem)] w-[clamp(2rem,6vw,5.5rem)] shrink-0 drop-shadow-[0_2px_12px_rgba(136,192,208,0.25)]"
                 />
               </div>
             ))}
@@ -270,7 +240,7 @@ interface ProjectPanelProps {
 function ProjectPanel({
   project,
   index,
-  total,
+  total: _total,
   reduce,
 }: ProjectPanelProps) {
   const ref = useRef<HTMLElement>(null)
@@ -323,9 +293,6 @@ function ProjectPanel({
   const titleOpacity = useTransform(enter, [0.25, 0.75], [0, 1])
   const titleY = useTransform(enter, [0.25, 0.75], [40, 0])
 
-  const infoOpacity = useTransform(enter, [0.5, 1], [0, 1])
-  const infoY = useTransform(enter, [0.5, 1], [48, 0])
-
   /* ---------- PROJECT DATA ---------- */
 
   const features = (project.features ?? []).slice(0, MAX_FEATURES)
@@ -338,7 +305,7 @@ function ProjectPanel({
     <article
       ref={ref}
       aria-label={project.title ?? `Project ${index + 1}`}
-      className="relative scroll-mt-28"
+      className="relative snap-start snap-always scroll-mt-20 md:scroll-mt-24 lg:scroll-mt-28"
     >
       <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-center px-6 py-14 md:px-8 md:py-20 lg:px-12 lg:py-24">
         <div className="relative flex flex-col gap-6 lg:block lg:min-h-[78dvh]">
@@ -351,7 +318,7 @@ function ProjectPanel({
           >
             <span
               style={{
-                WebkitTextStroke: "1px rgba(255,255,255,0.07)",
+                WebkitTextStroke: "2px rgba(255,255,255,0.07)",
               }}
             >
               {pad(index + 1)}
@@ -371,31 +338,16 @@ function ProjectPanel({
             }
             className={`relative z-30 lg:absolute lg:top-0 lg:w-[48%] ${sideText}`}
           >
-            <div className="mb-4 flex items-center gap-3">
-              <span
-                className="text-[10px] uppercase tracking-[0.3em]"
-                style={{ color: ACCENT }}
-              >
-                {pad(index + 1)} / {pad(total)}
-              </span>
 
-              <span className="h-px w-8 bg-white/20" />
-
-              <span className="truncate text-[10px] uppercase tracking-[0.25em] text-white/40">
-                {project.subtitle || "Project"}
-              </span>
-            </div>
-
-            <h3 className="break-words text-[clamp(2.5rem,6.2vw,6.5rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-white [text-shadow:0_2px_40px_rgba(46,52,64,0.55)]">
+            <h3 className="wrap-break-word text-[clamp(2.5rem,6.2vw,6.5rem)] font-bold font-accent leading-[0.92] tracking-[0.04em] text-primary [text-shadow:0_2px_40px_rgba(46,52,64,0.55)]">
               {project.title}
             </h3>
           </motion.div>
 
-          {/* Project image */}
 
           <motion.div
             style={motionOn ? { clipPath } : undefined}
-            className={`relative z-10 aspect-[4/5] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#3B4252] to-[#2E3440] sm:aspect-[16/10] lg:absolute lg:bottom-0 lg:aspect-auto lg:h-[88%] lg:w-[68%] ${sideImage}`}
+            className={`relative z-10 aspect-[4/5] w-full overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#3B4252] to-[#2E3440] sm:aspect-[16/10] lg:absolute lg:bottom-10 lg:aspect-auto lg:h-[88%] lg:w-[68%] ${sideImage}`}
           >
             {project.imageUrl ? (
               <motion.img
@@ -429,7 +381,7 @@ function ProjectPanel({
           {/* Glass info panel */}
 
           <div
-            className={`relative z-20 lg:absolute lg:bottom-[5%] lg:w-[40%] ${sideText}`}
+            className={`relative z-20 lg:absolute lg:bottom-[12%] lg:w-[40%] ${sideText}`}
           >
             <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-2xl backdrop-blur-xl md:p-8 lg:max-h-[56dvh]">
               <Glass rounded="rounded-[2rem]" />
@@ -501,7 +453,7 @@ function ProjectList({
   reduce: boolean
 }) {
   return (
-    <div className="relative z-10 px-2 md:px-25">
+    <div className="relative z-10 px-2 md:px-25 snap-y snap-proximity">
       {projects.map((project, index) => (
         <ProjectPanel
           key={project.id}
@@ -524,71 +476,28 @@ export default function Projects() {
   const reduce = useReducedMotion() ?? false
   const lenis = useLenis()
 
-  // Smooth Snap interpolasi via Lenis (tanpa konflik CSS Scroll Snap)
+  // Integrasi smooth scroll snap menggunakan lenis/snap
   useEffect(() => {
     if (!lenis || reduce || projects.length === 0) return
 
-    let isSnapping = false
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    const snap = new Snap(lenis, {
+      type: "proximity",
+      distanceThreshold: "28%",
+      duration: 1,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      debounce: 100,
+    })
 
-    const handleScroll = () => {
-      if (isSnapping) return
-
-      if (timeoutId) clearTimeout(timeoutId)
-
-      // Tunggu hingga user selesai scroll dan kecepatan momentum melambat
-      timeoutId = setTimeout(() => {
-        // Jangan snap jika user masih scroll aktif / berkecepatan tinggi
-        if (Math.abs(lenis.velocity) > 0.15) return
-
-        const section = document.getElementById("projects")
-        if (!section) return
-
-        const secRect = section.getBoundingClientRect()
-        const vh = window.innerHeight
-
-        // Hanya aktifkan snap saat user sedang berada di area section projects
-        if (secRect.top > vh * 0.7 || secRect.bottom < vh * 0.3) return
-
-        const articles = section.querySelectorAll<HTMLElement>("article")
-        if (articles.length === 0) return
-
-        const navOffset = 80 // Kompensasi navbar fixed (px)
-
-        let closestArticle: HTMLElement | null = null
-        let minDistance = Infinity
-
-        articles.forEach((article) => {
-          const rect = article.getBoundingClientRect()
-          const distance = Math.abs(rect.top - navOffset)
-
-          // Proximity threshold: snap saat jarak ke project target < 32% tinggi layar
-          if (distance < vh * 0.32 && distance < minDistance) {
-            minDistance = distance
-            closestArticle = article
-          }
-        })
-
-        // Snap secara halus hanya jika belum pas di posisi target
-        if (closestArticle && minDistance > 6) {
-          isSnapping = true
-          lenis.scrollTo(closestArticle, {
-            offset: -navOffset,
-            duration: 0.9,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            onComplete: () => {
-              isSnapping = false
-            },
-          })
-        }
-      }, 140)
+    const section = document.getElementById("projects")
+    if (section) {
+      const articles = section.querySelectorAll<HTMLElement>("article")
+      if (articles.length > 0) {
+        snap.addElements(Array.from(articles), { align: "start" })
+      }
     }
 
-    lenis.on("scroll", handleScroll)
-
     return () => {
-      if (timeoutId) clearTimeout(timeoutId)
-      lenis.off("scroll", handleScroll)
+      snap.destroy()
     }
   }, [lenis, reduce, projects])
 
@@ -596,7 +505,7 @@ export default function Projects() {
     return (
       <section
         id="projects"
-        className="flex min-h-[500px] items-center justify-center bg-transparent text-white scroll-mt-28"
+        className="flex min-h-[500px] items-center justify-center bg-transparent text-white"
       >
         <p className="text-white/40">Loading projects...</p>
       </section>
@@ -607,7 +516,7 @@ export default function Projects() {
     return (
       <section
         id="projects"
-        className="flex min-h-[500px] items-center justify-center bg-transparent text-white scroll-mt-28"
+        className="flex min-h-[500px] items-center justify-center bg-transparent text-white"
       >
         <p className="text-red-300/70">
           Failed to load projects.
@@ -620,7 +529,7 @@ export default function Projects() {
     return (
       <section
         id="projects"
-        className="flex min-h-[500px] items-center justify-center bg-transparent text-white scroll-mt-28"
+        className="flex min-h-[500px] items-center justify-center bg-transparent text-white"
       >
         <p className="text-white/40">
           No projects found.
@@ -632,16 +541,8 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="relative overflow-x-clip bg-transparent pb-24 pt-24 text-white scroll-mt-28 md:pt-32"
+      className="relative overflow-x-clip bg-transparent pb-24 pt-24 text-white md:pt-32 snap-y snap-proximity"
     >
-      {/* Ambient glow */}
-
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[30%] h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-white/[0.02] blur-[120px]" />
-
-        <div className="absolute -right-40 top-[60%] h-80 w-80 rounded-full bg-[#88C0D0]/[0.02] blur-[100px]" />
-      </div>
-
       <SelectedWorkHeader count={projects.length} />
 
       <ProjectList

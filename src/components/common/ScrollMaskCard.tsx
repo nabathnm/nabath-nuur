@@ -9,7 +9,7 @@ import {
   type MotionValue,
 } from "framer-motion"
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react"
-import Glass from "./ui/glass"
+import Glass from "../ui/glass"
 
 
 /* =====================================================
@@ -203,6 +203,8 @@ export default function ScrollMaskCard({
               src={imageSrc}
               alt={imageAlt}
               draggable={false}
+              loading="eager"
+              crossOrigin="anonymous"
               className="h-full w-full object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = "none"

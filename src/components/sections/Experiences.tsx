@@ -1,14 +1,24 @@
+import CatHeadPointer from "@/components/svg/CatHeadPointer";
 import { useExperiences } from "@/hooks/useExperiences";
 import { useLenis } from "@/lib/lenis";
 import type { Experience } from "@/models/experience";
-import { motion, useMotionValueEvent, useScroll, useTransform, type MotionValue } from "framer-motion";
+import {
+    AnimatePresence,
+    easeInOut,
+    motion,
+    useMotionValueEvent,
+    useScroll,
+    useSpring,
+    useTransform,
+    type MotionValue,
+} from "framer-motion";
 import { BriefcaseBusiness, CalendarDays, ChevronDown, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 /* =====================================================
    DYNAMIC CARD STACK CONFIGURATION GENERATOR
    Supports any total number of experiences loaded from Turso
-   Fully opaque solid cards (no transparency / no opacity fading)
+   Pure translate-driven stacking (no opacity/scale fade)
 ====================================================== */
 function getCardConfig(index: number, total: number) {
     const zIndex = (index + 1) * 10;
@@ -17,105 +27,75 @@ function getCardConfig(index: number, total: number) {
         return {
             input: [0, 1],
             y: [0, 0],
-            scale: [1, 1],
-            opacity: [1, 1],
             zIndex,
         };
     }
 
-    // High-precision tuned preset for 4 experiences (100% solid, fully opaque)
+    // High-precision tuned preset for 4 experiences (pure scroll translation)
     if (total === 4) {
         const presets = [
             {
                 input: [0, 0.18, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
                 y: [0, 0, -14, -14, -26, -26, -36, -36],
-                scale: [1.0, 1.0, 0.96, 0.96, 0.92, 0.92, 0.88, 0.88],
-                opacity: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
                 zIndex: 10,
             },
             {
-                input: [0, 0.119, 0.12, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
-                y: [520, 520, 520, 0, 0, -14, -14, -26, -26],
-                scale: [0.94, 0.94, 0.94, 1.0, 1.0, 0.96, 0.96, 0.92, 0.92],
-                opacity: [0, 0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                input: [0, 0.12, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
+                y: [1000, 1000, 0, 0, -14, -14, -26, -26],
                 zIndex: 20,
             },
             {
-                input: [0, 0.379, 0.38, 0.54, 0.69, 0.79, 1.0],
-                y: [520, 520, 520, 0, 0, -14, -14],
-                scale: [0.94, 0.94, 0.94, 1.0, 1.0, 0.96, 0.96],
-                opacity: [0, 0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                input: [0, 0.38, 0.54, 0.69, 0.79, 1.0],
+                y: [1000, 1000, 0, 0, -14, -14],
                 zIndex: 30,
             },
             {
-                input: [0, 0.639, 0.64, 0.80, 1.0],
-                y: [520, 520, 520, 0, 0],
-                scale: [0.94, 0.94, 0.94, 1.0, 1.0],
-                opacity: [0, 0, 1.0, 1.0, 1.0],
+                input: [0, 0.64, 0.80, 1.0],
+                y: [1000, 1000, 0, 0],
                 zIndex: 40,
             },
         ];
         return presets[index] ?? presets[0];
     }
 
-    // Dynamic keypoints generation for arbitrary N (100% solid, fully opaque)
+    // Dynamic keypoints generation for arbitrary N (pure translation)
     const input: number[] = [0];
     const y: number[] = [];
-    const scale: number[] = [];
-    const opacity: number[] = [];
 
     if (index > 0) {
         const startEnter = Math.max(0, (index - 0.7) / total);
         const fullyEntered = index / total;
 
-        input.push(Math.max(0, startEnter - 0.001));
-        y.push(520);
-        scale.push(0.94);
-        opacity.push(0);
-
         input.push(startEnter);
-        y.push(520);
-        scale.push(0.94);
-        opacity.push(1.0);
+        y.push(1000);
 
         input.push(fullyEntered);
         y.push(0);
-        scale.push(1.0);
-        opacity.push(1.0);
     } else {
         y.push(0);
-        scale.push(1.0);
-        opacity.push(1.0);
     }
 
     const activeUntil = (index + 0.7) / total;
     if (activeUntil < 1.0 && index < total - 1) {
         input.push(activeUntil);
         y.push(0);
-        scale.push(1.0);
-        opacity.push(1.0);
     }
 
     for (let j = index + 1; j < total; j++) {
         const coveredAt = (j + 0.15) / total;
         const depth = j - index;
         const targetY = -Math.min(36, depth * 14);
-        const targetScale = Math.max(0.86, 1.0 - depth * 0.04);
 
         input.push(Math.min(1.0, coveredAt));
         y.push(targetY);
-        scale.push(targetScale);
-        opacity.push(1.0);
     }
 
     if (input[input.length - 1] < 1.0) {
         input.push(1.0);
         y.push(y[y.length - 1]);
-        scale.push(scale[scale.length - 1]);
-        opacity.push(1.0);
     }
 
-    return { input, y, scale, opacity, zIndex };
+    return { input, y, zIndex };
 }
 
 /* =====================================================
@@ -135,21 +115,16 @@ function StackCard({
 }) {
     const config = getCardConfig(index, total);
 
-    // Smooth scroll-driven transformations
-    const y = useTransform(scrollYProgress, config.input, config.y);
-    const scale = useTransform(scrollYProgress, config.input, config.scale);
-    const opacity = useTransform(scrollYProgress, config.input, config.opacity);
+    // Smooth scroll-driven translation with ease-in-out curve
+    const y = useTransform(scrollYProgress, config.input, config.y, { ease: easeInOut });
 
     return (
         <motion.div
             style={{
                 y,
-                scale,
-                opacity,
                 zIndex: config.zIndex,
-                transformOrigin: "top center",
             }}
-            className="absolute inset-0 flex w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-white/80 bg-[#ECEFF4] p-6 sm:p-8 lg:p-9 xl:p-10 shadow-[0_22px_55px_rgba(0,0,0,0.38),0_4px_12px_rgba(0,0,0,0.15),0_-4px_16px_rgba(0,0,0,0.1)]"
+            className="absolute inset-0 flex w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-white/80 bg-[#ECEFF4] p-6 sm:p-7 lg:p-8 xl:p-9 shadow-[0_22px_55px_rgba(0,0,0,0.38),0_4px_12px_rgba(0,0,0,0.15),0_-4px_16px_rgba(0,0,0,0.1)]"
         >
             <div className="relative z-10 flex h-full flex-col justify-between gap-5 sm:gap-6">
                 {/* Header: Company Badge, Role, Period */}
@@ -268,6 +243,13 @@ export default function Experiences() {
         offset: ["start start", "end end"],
     });
 
+    // Spring interpolation to smooth out scroll ticks and create fluid organic motion
+    const smoothProgress = useSpring(scrollYProgress, {
+        damping: 24,
+        stiffness: 160,
+        mass: 0.35,
+    });
+
     // Update active experience smoothly on scroll
     useMotionValueEvent(scrollYProgress, "change", (latest) => {
         if (isClickScrollingRef.current || experiences.length === 0) return;
@@ -315,8 +297,10 @@ export default function Experiences() {
 
         if (lenis) {
             lenis.scrollTo(targetScrollY, {
-                duration: 0.9,
-                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                duration: 0.95,
+                // Cubic ease-in-out curve
+                easing: (t) =>
+                    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
                 onComplete: () => {
                     setTimeout(() => {
                         isClickScrollingRef.current = false;
@@ -352,7 +336,7 @@ export default function Experiences() {
     return (
         <section
             id="experiences"
-            className="relative overflow-x-clip bg-[#2E3440] text-white scroll-mt-20"
+            className="relative overflow-x-clip bg-[#2E3440] text-white"
         >
             {/* =====================================================
                 SCROLL TRACK (Multi-stage scroll canvas)
@@ -382,17 +366,19 @@ export default function Experiences() {
                                     return (
                                         <button
                                             key={experience.id}
-                                            role="tab"
                                             aria-selected={active}
                                             aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
                                             onClick={() => scrollToExperience(index)}
                                             onKeyDown={(e) => handleKeyDown(e, index)}
-                                            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
+                                            className={`shrink-0 flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
                                                 active
                                                     ? "border-[#88C0D0]/40 bg-[#88C0D0]/10 text-white"
-                                                    : "border-white/10 bg-white/[0.02] text-white/40 hover:text-white/70"
+                                                    : "border-white/10 bg-white/2 text-white/40 hover:text-white/70"
                                             }`}
                                         >
+                                            {active && (
+                                                <CatHeadPointer className="h-3.5 w-3.5 shrink-0" />
+                                            )}
                                             {experience.company}
                                         </button>
                                     );
@@ -427,32 +413,32 @@ export default function Experiences() {
                                                 tabIndex={active ? 0 : -1}
                                                 onClick={() => scrollToExperience(index)}
                                                 onKeyDown={(e) => handleKeyDown(e, index)}
-                                                className="group relative flex items-center text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#2E3440] rounded-xl"
+                                                className="group relative flex items-center text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-[#2E3440] rounded-xl"
                                             >
-                                                <div className="relative flex items-center gap-4 lg:gap-5">
-                                                    {/* Elegant Active Indicator Bar */}
-                                                    <div className="relative flex h-8 sm:h-9 lg:h-11 w-1.5 items-center justify-center">
-                                                        {active ? (
+                                                <div className="relative flex items-center gap-3 lg:gap-4">
+                                                    {/* Cat Head Pointer Active Indicator */}
+                                                    <div className="relative flex h-8 w-8 sm:h-9 sm:w-9 lg:h-14 lg:w-14 shrink-0 items-center justify-center">
+                                                        {active && (
                                                             <motion.div
                                                                 layoutId="activeExperienceIndicator"
-                                                                className="h-full w-1.5 rounded-full bg-[#88C0D0]"
+                                                                className="flex items-center justify-center"
                                                                 transition={{
                                                                     type: "spring",
-                                                                    stiffness: 400,
-                                                                    damping: 32,
+                                                                    stiffness: 380,
+                                                                    damping: 30,
                                                                 }}
-                                                            />
-                                                        ) : (
-                                                            <div className="h-1.5 w-1.5 rounded-full bg-white/20 transition-all duration-300 group-hover:scale-125 group-hover:bg-white/50" />
+                                                            >
+                                                                <CatHeadPointer className="h-8 w-8 sm:h-9 sm:w-9 lg:h-14 lg:w-14 drop-shadow-[0_2px_12px_rgba(136,192,208,0.25)]" />
+                                                            </motion.div>
                                                         )}
                                                     </div>
 
                                                     <div className="flex flex-col">
                                                         <span
-                                                            className={`text-2xl sm:text-3xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-semibold transition-all duration-300 tracking-[-0.03em] leading-[1.15] ${
+                                                            className={`text-2xl sm:text-3xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold transition-all duration-300 ease-in-out leading-10 ${
                                                                 active
-                                                                    ? "text-white translate-x-1"
-                                                                    : "text-white/25 hover:text-white/60"
+                                                                    ? "text-white translate-x-2"
+                                                                    : "text-white/25 hover:text-white/60 -translate-x-14"
                                                             }`}
                                                         >
                                                             {experience.company}
@@ -469,33 +455,40 @@ export default function Experiences() {
                                     Dynamic Stack Cards from Turso
                                 ================================================== */}
                                 <div className="lg:col-span-8">
-                                    <div className="relative w-full h-[520px] sm:h-[540px] lg:h-[560px]">
-                                        {experiences.map((experience, index) => (
-                                            <StackCard
-                                                key={experience.id}
-                                                experience={experience}
-                                                index={index}
-                                                total={experiences.length}
-                                                scrollYProgress={scrollYProgress}
-                                            />
-                                        ))}
+                                    {/* Stable card stack container with reserved top space for stacking tabs */}
+                                    <div className="relative w-full pt-9 sm:pt-10">
+                                        <div className="relative w-full h-[490px] sm:h-[510px] lg:h-[530px] xl:h-[540px]">
+                                            {experiences.map((experience, index) => (
+                                                <StackCard
+                                                    key={experience.id}
+                                                    experience={experience}
+                                                    index={index}
+                                                    total={experiences.length}
+                                                    scrollYProgress={smoothProgress}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Subtle Scroll Down Indicator on First Experience */}
-                            {activeIndex === 0 && experiences.length > 1 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="hidden lg:flex items-center gap-2 mt-8 text-[11px] uppercase tracking-[0.2em] text-white/25"
-                                >
-                                    <span>Scroll to explore timeline</span>
-                                    <ChevronDown size={13} className="animate-bounce text-[#88C0D0]/70" />
-                                </motion.div>
-                            )}
+                            {/* Subtle Scroll Down Indicator on First Experience (Absolute positioned to prevent layout shift) */}
+                            <div className="pointer-events-none absolute bottom-4 sm:bottom-6 left-6 md:left-8 lg:left-12 z-20">
+                                <AnimatePresence>
+                                    {activeIndex === 0 && experiences.length > 1 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -4 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -4 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="hidden lg:flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-white/25"
+                                        >
+                                            <span>Scroll to explore timeline</span>
+                                            <ChevronDown size={13} className="animate-bounce text-[#88C0D0]/70" />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </div>
                 </div>

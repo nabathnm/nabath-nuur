@@ -3,7 +3,7 @@ import type { Project } from '../models/project';
 import { projectService } from '../services/projectService';
 
 // Hook untuk mengambil semua data project
-export function useProjects(p0: number) {
+export function useProjects(_p0?: number) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

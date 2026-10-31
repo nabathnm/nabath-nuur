@@ -6,11 +6,30 @@ import {
   Smartphone
 } from "lucide-react"
 import { useRef } from "react"
-import ScrollMaskCard, { ScrollReveal } from "../ScrollMaskCard"
+import ScrollMaskCard, { ScrollReveal } from "../common/ScrollMaskCard"
 
-// Ganti dengan path foto kamu (mis. di folder /public). Jika file tidak ada,
-// card otomatis menampilkan gradient Nord sebagai fallback.
-const PROFILE_IMAGE = "https://supabase.com/dashboard/project/dgapjusikgybitsessku/storage/files/buckets/projects?preview=jowoki.jpg"
+/**
+ * Helper untuk memastikan URL gambar publik yang valid.
+ * Jika pengguna memasukkan URL dashboard console Supabase, fungsi ini
+ * otomatis mengubahnya menjadi public object URL yang bisa diakses tag <img>.
+ */
+function getDirectImageUrl(url: string): string {
+  if (!url) return ""
+
+  const dashboardMatch = url.match(
+    /supabase\.com\/dashboard\/project\/([^/]+)\/storage\/files\/buckets\/([^/?#]+).*[?&]preview=([^&]+)/
+  )
+  if (dashboardMatch) {
+    const [, projectRef, bucket, fileName] = dashboardMatch
+    return `https://${projectRef}.supabase.co/storage/v1/object/public/${bucket}/${fileName}`
+  }
+
+  return url
+}
+
+// Link foto profil publik langsung dari Supabase Storage / hosting eksternal
+const PROFILE_IMAGE =
+  "https://dgapjusikgybitsessku.supabase.co/storage/v1/object/public/projects/jowoki.jpg"
 
 const floatVariants: Variants = {
   animate: {
@@ -23,14 +42,6 @@ const floatVariants: Variants = {
   },
 }
 
-const _skills = [
-  "React",
-  "Next.js",
-  "TypeScript",
-  "Flutter",
-  "Dart",
-  "REST API",
-]
 
 export default function About() {
   const trackRef = useRef<HTMLDivElement>(null)
@@ -69,7 +80,7 @@ export default function About() {
     // tetap bekerja sekaligus mencegah horizontal overflow.
     <section
       id="about"
-      className="relative overflow-x-clip bg-transparent py-24 text-white scroll-mt-28"
+      className="relative overflow-x-clip bg-transparent py-24 text-white"
     >
       {/* =====================================================
           AMBIENT BACKGROUND (sticky so it follows the viewport)
@@ -86,17 +97,6 @@ export default function About() {
               rounded-full
               bg-white/[0.025]
               blur-[120px]
-            "
-          />
-
-          {/* Small glow */}
-          <div
-            className="
-              absolute -right-40 top-[20%]
-              h-80 w-80
-              rounded-full
-              bg-[#88C0D0]/[0.02]
-              blur-[100px]
             "
           />
 
@@ -250,7 +250,7 @@ export default function About() {
 
           <ScrollMaskCard
             progress={smoothProgress}
-            imageSrc={PROFILE_IMAGE}
+            imageSrc={getDirectImageUrl(PROFILE_IMAGE)}
             imageAlt="Nabath Nuur"
             idleContent={
               <div className="relative z-10 flex h-full flex-col justify-between p-6">

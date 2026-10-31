@@ -1,12 +1,34 @@
-import { motion, type Variants } from "framer-motion"
+import { motion, useMotionValue, useReducedMotion } from "framer-motion"
+import { useCallback, useState } from "react"
+import FloatingStickers from "../common/FloatingStickers"
+import HeroContent from "../common/HeroContent"
 import Cat from "../svg/Cat"
-import HeroContent from "./Hero/HeroContent"
 
 export default function Hero() {
+  const mouseX = useMotionValue(0.5)
+  const mouseY = useMotionValue(0.5)
+  const reducedMotion = useReducedMotion()
+  const [isTouchDevice] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches
+  )
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      if (reducedMotion || isTouchDevice) return
+      const rect = e.currentTarget.getBoundingClientRect()
+      mouseX.set((e.clientX - rect.left) / rect.width)
+      mouseY.set((e.clientY - rect.top) / rect.height)
+    },
+    [mouseX, mouseY, reducedMotion, isTouchDevice]
+  )
+
   return (
     <section
       id="home"
-      className="relative min-h-screen overflow-hidden pt-28 text-white scroll-mt-28"
+      className="relative min-h-screen overflow-hidden pt-28 text-white"
+      onMouseMove={handleMouseMove}
     >
       {/* =====================================================
           BACKGROUND
@@ -36,97 +58,20 @@ export default function Hero() {
       <div className="pointer-events-none absolute left-[42%] bottom-[18%] h-[3px] w-[3px] rounded-full bg-white/20" />
 
       {/* =====================================================
-          FLOATING CARDS (MENGELILINGI KONTEN UTAMA)
+          FLOATING STICKERS
       ====================================================== */}
-      
-      {/* Card 1: Kiri Atas */}
-      <motion.div
-        initial={{ opacity: 0, x: -50, y: 20 }}
-        animate={{ 
-          opacity: 1, 
-          x: 0, 
-          y: [0, -10, 0] // Floating effect
-        }}
-        transition={{
-          opacity: { duration: 0.8, delay: 0.2 },
-          x: { duration: 0.8, delay: 0.2, type: "spring" },
-          y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-        }}
-        className="absolute left-[5%] top-[25%] z-10 hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-xl backdrop-blur-md md:block lg:left-[10%]"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-xs text-white/50">Specialized In</p>
-            <p className="text-sm font-medium text-white/90">Web Development</p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Card 2: Kiri Bawah */}
-      <motion.div
-        initial={{ opacity: 0, x: -50, y: -20 }}
-        animate={{ 
-          opacity: 1, 
-          x: 0, 
-          y: [0, 15, 0] 
-        }}
-        transition={{
-          opacity: { duration: 0.8, delay: 0.4 },
-          x: { duration: 0.8, delay: 0.4, type: "spring" },
-          y: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }
-        }}
-        className="absolute bottom-[20%] left-[8%] z-10 hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-xl backdrop-blur-md md:block lg:left-[15%]"
-      >
-        <div className="flex items-center gap-4">
-          <div className="flex -space-x-2">
-            <div className="h-8 w-8 rounded-full border-2 border-[#1a1b26] bg-amber-500/20 flex items-center justify-center text-xs">JS</div>
-            <div className="h-8 w-8 rounded-full border-2 border-[#1a1b26] bg-cyan-500/20 flex items-center justify-center text-xs">TS</div>
-            <div className="h-8 w-8 rounded-full border-2 border-[#1a1b26] bg-sky-500/20 flex items-center justify-center text-xs">Re</div>
-          </div>
-          <p className="text-sm font-medium text-white/70">Modern Stack</p>
-        </div>
-      </motion.div>
-
-      {/* Card 3: Kanan Atas */}
-      <motion.div
-        initial={{ opacity: 0, x: 50, y: 20 }}
-        animate={{ 
-          opacity: 1, 
-          x: 0, 
-          y: [0, -12, 0] 
-        }}
-        transition={{
-          opacity: { duration: 0.8, delay: 0.6 },
-          x: { duration: 0.8, delay: 0.6, type: "spring" },
-          y: { duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
-        }}
-        className="absolute right-[5%] top-[20%] z-10 hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-xl backdrop-blur-md md:block lg:right-[12%]"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-3 w-3 items-center justify-center">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-          </div>
-          <p className="text-sm font-medium text-white/90">Available for work</p>
-        </div>
-      </motion.div>
+      <FloatingStickers mouseX={mouseX} mouseY={mouseY} />
 
       {/* =====================================================
-          HERO CONTENT
+          HERO CONTENT (z-20 agar di atas stickers z-10)
       ====================================================== */}
       <div className="relative z-20 flex h-full items-center justify-center">
         <HeroContent />
       </div>
 
       {/* =====================================================
-          CAT
+          CAT (z-20, pointer-events-none)
       ====================================================== */}
-
       <motion.div
         initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
@@ -139,10 +84,6 @@ export default function Hero() {
       >
         <Cat />
       </motion.div>
-
-      {/* =====================================================
-          BOTTOM DECORATION
-      ====================================================== */}
     </section>
   )
 }
