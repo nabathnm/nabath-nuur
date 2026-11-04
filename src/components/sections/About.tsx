@@ -1,5 +1,6 @@
 "use client"
 
+import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import {
   motion,
   useAnimationFrame,
@@ -10,14 +11,8 @@ import {
   useSpring,
   useTransform,
   useVelocity,
-  type Variants,
 } from "framer-motion"
-import {
-  Globe2,
-  Smartphone
-} from "lucide-react"
 import { useEffect, useRef } from "react"
-import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import ScrollMaskCard, { ScrollReveal } from "../common/ScrollMaskCard"
 
 /**
@@ -42,18 +37,6 @@ function getDirectImageUrl(url: string): string {
 // Link foto profil publik langsung dari Supabase Storage / hosting eksternal
 const PROFILE_IMAGE =
   "https://dgapjusikgybitsessku.supabase.co/storage/v1/object/public/projects/jowoki.jpg"
-
-const floatVariants: Variants = {
-  animate: {
-    y: [-6, 6, -6],
-    transition: {
-      duration: 5,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
-  },
-}
-
 
 // Pengaturan animasi background marquee (mengikuti gaya title Project)
 const BASE_SPEED = 70 // px/detik, kecepatan pergeseran otomatis (ke kiri)
@@ -136,18 +119,9 @@ export default function About() {
     x.set(next)
   })
 
-  // Side content / ambient visuals fade away while the card expands.
-  const sideOpacity = useTransform(smoothProgress, [0, 0.18], [1, 0])
-  const leftX = useTransform(smoothProgress, [0, 0.18], [0, -48])
-  const rightX = useTransform(smoothProgress, [0, 0.18], [0, 48])
-  const visualOpacity = useTransform(smoothProgress, [0, 0.3], [1, 0])
   const indicatorOpacity = useTransform(smoothProgress, [0, 0.12], [1, 0])
   // Marquee background terlihat jelas di posisi awal dan memudar saat card expand
   const bgMarqueeOpacity = useTransform(smoothProgress, [0, 0.25], [1, 0])
-  const gridPointerEvents = useTransform(
-    smoothProgress,
-    (v: number): "auto" | "none" => (v > 0.2 ? "none" : "auto")
-  )
 
   /* =====================================================
       SIDE CONTENT (rendered in the sticky stage on lg,
@@ -163,35 +137,6 @@ export default function About() {
       id="about"
       className="relative overflow-x-clip bg-transparent py-24 text-white"
     >
-      {/* =====================================================
-          AMBIENT BACKGROUND (sticky so it follows the viewport)
-      ====================================================== */}
-
-      <div className="pointer-events-none absolute inset-0">
-        <div className="sticky top-0 h-[100dvh] overflow-hidden">
-          {/* Main glow */}
-          <div
-            className="
-              absolute left-1/2 top-1/2
-              h-[500px] w-[500px]
-              -translate-x-1/2 -translate-y-1/2
-              rounded-full
-              bg-white/[0.025]
-              blur-[120px]
-            "
-          />
-
-          {/* Stars */}
-          <div className="absolute left-[8%] top-[18%] h-1 w-1 rounded-full bg-white/25" />
-          <div className="absolute left-[18%] top-[65%] h-[3px] w-[3px] rounded-full bg-white/15" />
-          <div className="absolute right-[10%] top-[30%] h-1 w-1 rounded-full bg-white/20" />
-          <div className="absolute right-[18%] bottom-[20%] h-1.5 w-1.5 rounded-full bg-white/15" />
-          <div className="absolute left-[47%] bottom-[12%] h-[3px] w-[3px] rounded-full bg-white/20" />
-        </div>
-      </div>
-
-
-
       {/* =====================================================
           SCROLL TRACK (sticky stage + scroll-driven card)
       ====================================================== */}
@@ -246,143 +191,6 @@ export default function About() {
             </motion.div>
           </motion.div>
 
-          {/* Header badge kecil di posisi awal */}
-          <motion.div
-            style={{ opacity: indicatorOpacity }}
-            className="pointer-events-none absolute top-8 sm:top-10 left-6 md:left-8 lg:left-12 z-20 flex items-center gap-3"
-          >
-            <span className="h-px w-8 bg-white/30" />
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
-              About
-            </span>
-          </motion.div>
-
-          {/* Grid: side columns + orbit/labels (card is rendered separately) */}
-          <motion.div
-            style={{ pointerEvents: gridPointerEvents }}
-            className="relative z-20 mx-auto w-full max-w-7xl px-6 md:px-8"
-          >
-            <div className="grid grid-cols-1 gap-12 lg:grid-cols-[0.8fr_1.2fr_0.8fr] lg:items-center">
-
-              {/* =================================================
-                  LEFT
-              ================================================== */}
-
-              <motion.div
-                style={{ opacity: sideOpacity, x: leftX }}
-                className="hidden lg:block"
-              >
-              </motion.div>
-
-              {/* =================================================
-                  CENTER VISUAL
-              ================================================== */}
-
-              <motion.div
-                style={{ opacity: visualOpacity }}
-                className="relative"
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.94 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{
-                    duration: 0.8,
-                    ease: "easeOut",
-                  }}
-                  className="relative flex min-h-[540px] items-center justify-center"
-                >
-                  {/* Orbit */}
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 35,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="
-                      absolute
-                      h-[330px] w-[330px]
-                      rounded-full
-                      border border-white/[0.055]
-                    "
-                  >
-                    {/* Orbit dot */}
-                    <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-white/25" />
-                  </motion.div>
-
-                  <div
-                    className="
-                      absolute
-                      h-[440px] w-[440px]
-                      rounded-full
-                      border border-white/[0.035]
-                    "
-                  />
-
-                  {/* Vertical line */}
-                  <div className="absolute h-[500px] w-px bg-gradient-to-b from-transparent via-white/[0.04] to-transparent" />
-
-                  {/* Floating left label */}
-                  <motion.div
-                    variants={floatVariants}
-                    animate="animate"
-                    className="
-                      absolute left-[2%] top-[28%]
-                      z-30
-                      rounded-2xl
-                      border border-white/10
-                      bg-white/[0.035]
-                      px-4 py-3
-                      backdrop-blur-xl
-                    "
-                  >
-                    <div className="flex items-center gap-2">
-                      <Globe2 className="h-3.5 w-3.5 text-white/30" />
-
-                      <span className="text-[10px] text-white/40">
-                        Web
-                      </span>
-                    </div>
-                  </motion.div>
-
-                  {/* Floating right label */}
-                  <motion.div
-                    variants={floatVariants}
-                    animate="animate"
-                    className="
-                      absolute right-[2%] bottom-[25%]
-                      z-30
-                      rounded-2xl
-                      border border-white/10
-                      bg-white/[0.035]
-                      px-4 py-3
-                      backdrop-blur-xl
-                    "
-                  >
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="h-3.5 w-3.5 text-white/30" />
-
-                      <span className="text-[10px] text-white/40">
-                        Mobile
-                      </span>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-
-              {/* =================================================
-                  RIGHT
-              ================================================== */}
-
-              <motion.div
-                style={{ opacity: sideOpacity, x: rightX }}
-                className="hidden lg:block"
-              >
-              </motion.div>
-            </div>
-          </motion.div>
-
           {/* =================================================
               MAIN PROFILE CARD → scroll-driven fullscreen mask
           ================================================== */}
@@ -433,9 +241,6 @@ export default function About() {
                 className="mb-6 flex items-center gap-3"
               >
                 <span className="h-px w-8 bg-white/30" />
-                <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">
-                  About Me
-                </span>
                 <span className="h-px w-8 bg-white/30" />
               </ScrollReveal>
 

@@ -282,7 +282,7 @@ export default function MagneticHeadline({ className = "" }: { className?: strin
       </span>
 
       {/* Interactive characters with magnetic repulsion across 5 lines */}
-      <div aria-hidden="true" className="flex flex-col gap-y-1 sm:gap-y-1.5 md:gap-y-2">
+      <div aria-hidden="true" className="flex flex-col gap-y-1">
         {HEADLINE_LINES.map((line, lineIdx) => (
           <div
             key={lineIdx}
@@ -291,7 +291,7 @@ export default function MagneticHeadline({ className = "" }: { className?: strin
             {line.words.map((wordItem, wordIdx) => {
               const wordColor = wordItem.isHighlight
                 ? "text-white font-bold"
-                : "text-white/40 font-medium";
+                : "text-white/40 font-bold";
 
               return (
                 <span

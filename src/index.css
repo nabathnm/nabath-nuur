@@ -152,4 +152,51 @@
       @apply border border-white/10 bg-white/[0.04]  shadow-2xl backdrop-blur-xl;
     }
   }
+
+  /* =====================================================
+     EDITORIAL MARQUEE ANIMATIONS (Hardware Accelerated)
+  ====================================================== */
+  @keyframes marquee-left {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  @keyframes marquee-right {
+    from {
+      transform: translate3d(-50%, 0, 0);
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .animate-marquee-left {
+    display: flex;
+    width: max-content;
+    animation: marquee-left var(--marquee-duration, 38s) linear infinite;
+    will-change: transform;
+  }
+
+  .animate-marquee-right {
+    display: flex;
+    width: max-content;
+    animation: marquee-right var(--marquee-duration, 38s) linear infinite;
+    will-change: transform;
+  }
+
+  .pause-on-hover:hover .animate-marquee-left,
+  .pause-on-hover:hover .animate-marquee-right {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-marquee-left,
+    .animate-marquee-right {
+      animation-play-state: paused !important;
+    }
+  }
 }

@@ -1,5 +1,5 @@
-import { motion, useMotionValue, useReducedMotion, type Variants } from "framer-motion"
-import { useCallback, useRef, useState } from "react"
+import { motion, type Variants } from "framer-motion"
+import { useRef, useState } from "react"
 import FloatingStickers from "../common/FloatingStickers"
 import MagneticHeadline from "../common/MagneticHeadline"
 import TerminalModal, { type StickerInfo } from "../common/TerminalModal"
@@ -7,25 +7,6 @@ import TerminalModal, { type StickerInfo } from "../common/TerminalModal"
 export default function Hero() {
   const heroRef = useRef<HTMLElement>(null)
   const [selectedSticker, setSelectedSticker] = useState<StickerInfo | null>(null)
-
-  const mouseX = useMotionValue(0.5)
-  const mouseY = useMotionValue(0.5)
-  const reducedMotion = useReducedMotion()
-  const [isTouchDevice] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(pointer: coarse)").matches
-  )
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (reducedMotion || isTouchDevice) return
-      const rect = e.currentTarget.getBoundingClientRect()
-      mouseX.set((e.clientX - rect.left) / rect.width)
-      mouseY.set((e.clientY - rect.top) / rect.height)
-    },
-    [mouseX, mouseY, reducedMotion, isTouchDevice]
-  )
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -57,8 +38,7 @@ export default function Hero() {
     <section
       id="home"
       ref={heroRef}
-      className="relative flex min-h-screen items-center overflow-hidden pt-20 pb-12 sm:pt-24 lg:pt-28 text-white"
-      onMouseMove={handleMouseMove}
+      className="relative flex min-h-screen items-center overflow-hidden pt-10 pb-12 sm:pt-10 lg:pt-0 text-white"
     >
       {/* =====================================================
           BACKGROUND
@@ -83,15 +63,15 @@ export default function Hero() {
       {/* =====================================================
           HERO CONTENT (Left Editorial Headline + Right Standby Terminal)
       ====================================================== */}
-      <div className="pointer-events-none relative z-10 flex min-h-screen w-full items-center pt-24 pb-16 sm:pt-28">
-        <div className="pointer-events-none relative mx-auto flex w-full max-w-[1600px] items-center px-6 sm:px-10 md:px-12 lg:px-16 xl:px-20">
+      <div className="pointer-events-none relative z-10 flex min-h-screen w-full items-center pt-10 pb-16">
+        <div className="pointer-events-none relative mx-auto flex w-full max-w-[1600px] px-6 sm:px-10 md:px-12 lg:px-16 xl:px-20">
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="pointer-events-none w-full"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-14 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-14 ">
               {/* Left Column: Interactive Editorial Typography */}
               <div className="lg:col-span-7 xl:col-span-7 text-left">
                 <motion.div
@@ -114,7 +94,6 @@ export default function Hero() {
                   <TerminalModal
                     sticker={selectedSticker}
                     onClose={() => setSelectedSticker(null)}
-                    onSelectSticker={(info) => setSelectedSticker(info)}
                   />
                 </motion.div>
               </div>
@@ -127,8 +106,6 @@ export default function Hero() {
           FLOATING & DRAGGABLE STICKERS (z-30 on top of empty space)
       ====================================================== */}
       <FloatingStickers
-        mouseX={mouseX}
-        mouseY={mouseY}
         heroRef={heroRef}
         onSelectSticker={(info) => setSelectedSticker(info)}
       />

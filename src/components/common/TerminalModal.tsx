@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Terminal, X, Copy, Check, Sparkles, RefreshCw } from "lucide-react";
-import { STICKER_DATA } from "./FloatingStickers";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Check, Copy, RefreshCw, Sparkles, Terminal, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 export interface StickerInfo {
   id: string;
@@ -19,7 +18,6 @@ export interface StickerInfo {
 export interface TerminalModalProps {
   sticker: StickerInfo | null;
   onClose: () => void;
-  onSelectSticker?: (info: StickerInfo) => void;
   className?: string;
 }
 
@@ -39,22 +37,106 @@ const STANDBY_DATA: StickerInfo = {
   ],
 };
 
-const STICKER_SHORTCUTS = [
-  { key: "ub", label: "UB" },
-  { key: "laptop", label: "Laptop" },
-  { key: "cat", label: "Cat" },
-  { key: "cv", label: "CV" },
-] as const;
-
 export default function TerminalModal({
   sticker,
   onClose,
-  onSelectSticker,
   className = "",
 }: TerminalModalProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const targetInfo = sticker || STANDBY_DATA;
+  const targetCommand = targetInfo.command;
+
   const [copied, setCopied] = useState(false);
-  const currentInfo = sticker || STANDBY_DATA;
-  const isStandby = !sticker;
+  const [displayedCommand, setDisplayedCommand] = useState("");
+  const [activeInfo, setActiveInfo] = useState<StickerInfo>(targetInfo);
+  const [showOutput, setShowOutput] = useState(false);
+  const [terminalStatus, setTerminalStatus] = useState<"idle" | "typing" | "deleting">("typing");
+
+  const currentTextRef = useRef("");
+  const lastExecutedCommandRef = useRef<string | null>(null);
+
+  // Typing and backspacing execution effect
+  useEffect(() => {
+    // If current target command is already executed and showing output, do not re-run
+    if (lastExecutedCommandRef.current === targetCommand && showOutput) {
+      return;
+    }
+
+    // Accessibility: instant display if reduced motion is requested
+    if (prefersReducedMotion) {
+      currentTextRef.current = targetCommand;
+      setDisplayedCommand(targetCommand);
+      setActiveInfo(targetInfo);
+      setShowOutput(true);
+      setTerminalStatus("idle");
+      lastExecutedCommandRef.current = targetCommand;
+      return;
+    }
+
+    let isCancelled = false;
+    let timer: number | null = null;
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timer = window.setTimeout(resolve, ms);
+      });
+
+    const runTerminalSequence = async () => {
+      lastExecutedCommandRef.current = targetCommand;
+
+      // 1. Immediately hide previous command's output
+      setShowOutput(false);
+
+      // 2. Backspace delete current displayed command down to empty string
+      if (currentTextRef.current.length > 0) {
+        setTerminalStatus("deleting");
+        while (currentTextRef.current.length > 0) {
+          if (isCancelled) return;
+          currentTextRef.current = currentTextRef.current.slice(0, -1);
+          setDisplayedCommand(currentTextRef.current);
+          await sleep(12);
+        }
+      }
+
+      if (isCancelled) return;
+
+      // 3. Brief pause at empty prompt before writing the new command
+      await sleep(80);
+      if (isCancelled) return;
+
+      // 4. Update the active info for header and specs
+      setActiveInfo(targetInfo);
+      setTerminalStatus("typing");
+
+      // 5. Type out targetCommand character by character
+      const target = targetCommand;
+      for (let i = 1; i <= target.length; i++) {
+        if (isCancelled) return;
+        currentTextRef.current = target.slice(0, i);
+        setDisplayedCommand(currentTextRef.current);
+        await sleep(20);
+      }
+
+      if (isCancelled) return;
+
+      // 6. Simulate brief execution pause (like pressing Enter)
+      await sleep(160);
+      if (isCancelled) return;
+
+      // 7. Reveal command output and return to idle state
+      setShowOutput(true);
+      setTerminalStatus("idle");
+    };
+
+    runTerminalSequence();
+
+    return () => {
+      isCancelled = true;
+      if (timer !== null) {
+        clearTimeout(timer);
+      }
+    };
+  }, [targetCommand, targetInfo, prefersReducedMotion]);
 
   // Reset to standby on Escape key press if a sticker is currently active
   useEffect(() => {
@@ -69,16 +151,18 @@ export default function TerminalModal({
   }, [sticker, onClose]);
 
   const handleCopy = () => {
-    const textToCopy = `${currentInfo.title}\n${currentInfo.description}\n` +
-      (currentInfo.fields?.map((f) => `${f.label}: ${f.value}`).join("\n") || "");
+    const textToCopy = `${activeInfo.title}\n${activeInfo.description}\n` +
+      (activeInfo.fields?.map((f) => `${f.label}: ${f.value}`).join("\n") || "");
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isStandby = !sticker;
+
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-2xl border border-white/15 bg-[#242933]/92 shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.05)] backdrop-blur-xl font-mono text-xs sm:text-sm text-[#D8DEE9] select-none ${className}`}
+      className={`relative w-full overflow-hidden rounded-2xl border border-white/15 bg-[#242933]/92 backdrop-blur-xl font-mono text-xs sm:text-sm text-[#D8DEE9] select-none ${className}`}
     >
       {/* Ambient top terminal glow */}
       <div className="pointer-events-none absolute -top-24 left-1/2 h-32 w-64 -translate-x-1/2 rounded-full bg-[#88C0D0]/10 blur-3xl" />
@@ -104,7 +188,7 @@ export default function TerminalModal({
         <div className="flex items-center gap-2 text-white/70 text-xs">
           <Terminal className="h-3.5 w-3.5 text-[#88C0D0]" />
           <span className="font-mono text-[11px] sm:text-xs tracking-tight">
-            nabath@cosmic-os: ~/{currentInfo.id}
+            nabath@cosmic-os: ~/{activeInfo.id}
           </span>
         </div>
 
@@ -113,8 +197,9 @@ export default function TerminalModal({
           <button
             type="button"
             onClick={handleCopy}
+            disabled={!showOutput}
             title="Copy terminal telemetry"
-            className="rounded p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none"
           >
             {copied ? (
               <Check className="h-3.5 w-3.5 text-[#A3BE8C]" />
@@ -136,122 +221,128 @@ export default function TerminalModal({
       </div>
 
       {/* Terminal Window Content with Smooth Transitions */}
-      <div className="relative z-10 p-4 sm:p-5 space-y-3.5">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentInfo.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18 }}
-            className="space-y-3.5"
-          >
-            {/* Shell prompt execution line */}
-            <div className="flex items-center gap-2 text-[#88C0D0] text-xs sm:text-[13px]">
-              <span className="text-[#A3BE8C] font-bold">➜</span>
-              <span className="text-[#81A1C1] font-semibold">~</span>
-              <span className="text-white/90 truncate">{currentInfo.command}</span>
-            </div>
-
-            {/* Primary info card */}
-            <div className="rounded-xl border border-white/10 bg-[#2E3440]/70 p-3.5 sm:p-4 shadow-inner">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-[#88C0D0]" />
-                  <span className="text-sm font-bold text-white tracking-wide">
-                    {currentInfo.title}
-                  </span>
-                </div>
-
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
-                    currentInfo.badgeColor ||
-                    "border border-[#88C0D0]/30 bg-[#88C0D0]/10 text-[#88C0D0]"
-                  }`}
-                >
-                  {currentInfo.badge}
-                </span>
-              </div>
-
-              <p className="mt-2.5 text-xs sm:text-[13px] leading-relaxed text-[#D8DEE9]/85 font-sans">
-                {currentInfo.description}
-              </p>
-            </div>
-
-            {/* Structured Specs / Metadata Fields */}
-            {currentInfo.fields && currentInfo.fields.length > 0 && (
-              <div className="rounded-xl border border-white/[0.06] bg-[#1E222A]/60 p-3 space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/35 pb-1 border-b border-white/[0.05]">
-                  Telemetry & Specifications
-                </div>
-                <div className="grid grid-cols-1 gap-1.5 pt-0.5">
-                  {currentInfo.fields.map((field) => (
-                    <div
-                      key={field.label}
-                      className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 text-xs"
-                    >
-                      <span className="text-[#81A1C1] shrink-0 font-mono text-[11px]">
-                        {field.label}:
-                      </span>
-                      <span className="text-[#ECEFF4] font-sans text-xs">
-                        {field.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Quick Inspection Buttons */}
-        {onSelectSticker && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/[0.06]">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/35 mr-1">
-              Inspect:
+      <div className="relative z-10 p-4 sm:p-5 flex flex-col justify-between min-h-[360px] sm:min-h-[390px]">
+        <div>
+          {/* Shell prompt execution line */}
+          <div className="flex items-center gap-2 text-[#88C0D0] text-xs sm:text-[13px] font-mono min-h-[24px]">
+            <span className="text-[#A3BE8C] font-bold select-none">➜</span>
+            <span className="text-[#81A1C1] font-semibold select-none">~</span>
+            <span className="text-white/90 break-all">
+              {displayedCommand}
+              <span
+                className={`inline-block w-2 h-3.5 sm:h-4 bg-[#88C0D0] ml-1 align-middle ${
+                  terminalStatus === "idle" ? "animate-pulse" : "opacity-100"
+                }`}
+              />
             </span>
-            {STICKER_SHORTCUTS.map((item) => {
-              const active = currentInfo.id === STICKER_DATA[item.key]?.id;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => onSelectSticker(STICKER_DATA[item.key])}
-                  className={`rounded-md px-2 py-0.5 text-[11px] font-mono transition-all duration-200 ${
-                    active
-                      ? "border border-[#88C0D0]/60 bg-[#88C0D0]/20 text-white font-bold"
-                      : "border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-            {!isStandby && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="ml-auto text-[11px] font-mono text-white/40 hover:text-white/80 transition-colors"
-              >
-                [reset]
-              </button>
-            )}
           </div>
-        )}
+
+          {/* Structured Specs / Metadata Fields */}
+          <div className="mt-3.5">
+            <AnimatePresence mode="wait">
+              {showOutput && (
+                <motion.div
+                  key={activeInfo.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3.5"
+                >
+                  {activeInfo.fields && activeInfo.fields.length > 0 && (
+                    <div className="rounded-xl border border-white/[0.08] bg-[#1E222A]/60 p-3.5 sm:p-4 space-y-2.5 shadow-inner">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-[#88C0D0]" />
+                          <span className="text-sm font-bold text-white tracking-wide">
+                            {activeInfo.title}
+                          </span>
+                        </div>
+
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                            activeInfo.badgeColor ||
+                            "border border-[#88C0D0]/30 bg-[#88C0D0]/10 text-[#88C0D0]"
+                          }`}
+                        >
+                          {activeInfo.badge}
+                        </span>
+                      </div>
+
+                      <p className="text-xs sm:text-[13px] leading-relaxed text-[#D8DEE9]/85 font-sans">
+                        {activeInfo.description}
+                      </p>
+
+                      <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/35 pt-1 pb-1 border-b border-white/[0.05]">
+                        Telemetry & Specifications
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-1.5 pt-0.5">
+                        {activeInfo.fields.map((field) => (
+                          <div
+                            key={field.label}
+                            className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 text-xs"
+                          >
+                            <span className="text-[#81A1C1] shrink-0 font-mono text-[11px]">
+                              {field.label}:
+                            </span>
+                            <span className="text-[#ECEFF4] font-sans text-xs">
+                              {field.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
         {/* Terminal Footer with status & blinking prompt */}
-        <div className="flex items-center justify-between pt-1 text-[11px] text-white/40">
+        <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/[0.06] text-[11px] text-white/40 select-none">
           <div className="flex items-center gap-1.5">
             <span className="text-[#A3BE8C]">➜</span>
             <span className="text-[#81A1C1]">status:</span>
-            <span className={isStandby ? "text-[#88C0D0] font-semibold" : "text-[#A3BE8C] font-semibold"}>
-              {isStandby ? "STANDBY_ONLINE" : "INSPECTING"}
+            <span
+              className={
+                terminalStatus === "deleting"
+                  ? "text-[#BF616A] font-semibold"
+                  : terminalStatus === "typing"
+                  ? "text-[#EBCB8B] font-semibold"
+                  : isStandby
+                  ? "text-[#88C0D0] font-semibold"
+                  : "text-[#A3BE8C] font-semibold"
+              }
+            >
+              {terminalStatus === "deleting"
+                ? "CLEARING_BUFFER"
+                : terminalStatus === "typing"
+                ? "EXECUTING"
+                : isStandby
+                ? "STANDBY_ONLINE"
+                : "INSPECTING"}
             </span>
-            <span className="inline-block h-3.5 w-1.5 bg-[#88C0D0] animate-pulse ml-0.5" />
+            <span
+              className={`inline-block h-3.5 w-1.5 ml-0.5 ${
+                terminalStatus === "idle"
+                  ? "bg-[#88C0D0] animate-pulse"
+                  : terminalStatus === "deleting"
+                  ? "bg-[#BF616A]"
+                  : "bg-[#EBCB8B]"
+              }`}
+            />
           </div>
 
           <span className="text-[10px] text-white/30 font-mono">
-            {isStandby ? "click sticker to inspect" : "click [ESC] to reset"}
+            {terminalStatus === "deleting"
+              ? "backspacing command..."
+              : terminalStatus === "typing"
+              ? "streaming script..."
+              : isStandby
+              ? "click sticker to inspect"
+              : "click [ESC] to reset"}
           </span>
         </div>
       </div>

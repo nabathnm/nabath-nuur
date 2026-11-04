@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Tool } from '../models/tool';
 import { toolService } from '../services/toolService';
 
-// Hook menerima parameter opsional 'category'. 
-// Jika diisi, akan mengambil tools sesuai kategori saja.
+// Hook untuk mengambil data tools langsung dari tabel `tools` di database Turso
 export function useTools(category?: string) {
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -21,16 +20,16 @@ export function useTools(category?: string) {
           data = await toolService.getAllTools();
         }
         
-        setTools(data);
+        setTools(data || []);
       } catch (err: any) {
-        setError(err.message || 'Gagal memuat data tools');
+        setError(err.message || 'Gagal memuat data tools dari database Turso');
       } finally {
         setLoading(false);
       }
     }
 
     loadTools();
-  }, [category]); // Re-fetch data jika kategori berubah
+  }, [category]);
 
   return { tools, loading, error };
 }

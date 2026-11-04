@@ -1,14 +1,12 @@
 import {
   motion,
   useReducedMotion,
-  useTransform,
   type Easing,
-  type MotionValue,
 } from "framer-motion"
 import { useRef } from "react"
+import cvImg from "../sticker/cv.png"
 import laptopImg from "../sticker/laptop.png"
 import ubImg from "../sticker/ub.png"
-import cvImg from "../sticker/cv.png"
 import Cat from "../svg/Cat"
 import { type StickerInfo } from "./TerminalModal"
 
@@ -79,14 +77,12 @@ export const STICKER_DATA: Record<string, StickerInfo> = {
 }
 
 interface FloatingStickersProps {
-  mouseX: MotionValue<number>
-  mouseY: MotionValue<number>
   heroRef?: React.RefObject<HTMLElement | null>
   onSelectSticker: (info: StickerInfo) => void
 }
 
 /* ------------------------------------------------------------------ */
-/*  Sticker Wrapper (Positioning + Parallax + Float + Drag + Tap)     */
+/*  Sticker Wrapper (Positioning + Idle Float + Drag + Tap)           */
 /* ------------------------------------------------------------------ */
 
 interface StickerProps {
@@ -94,10 +90,7 @@ interface StickerProps {
   info?: StickerInfo
   className?: string
   delay?: number
-  depth?: number
   float?: { y?: number; x?: number; rotate?: number; duration?: number }
-  mouseX: MotionValue<number>
-  mouseY: MotionValue<number>
   prefersReducedMotion: boolean | null
   heroRef?: React.RefObject<HTMLElement | null>
   onSelect?: (info: StickerInfo) => void
@@ -109,17 +102,12 @@ function Sticker({
   info,
   className = "",
   delay = 0.4,
-  depth = 10,
   float = { y: 8, duration: 5 },
-  mouseX,
-  mouseY,
   prefersReducedMotion,
   heroRef,
   onSelect,
   isInteractive = true,
 }: StickerProps) {
-  const px = useTransform(mouseX, [0, 1], [-depth, depth])
-  const py = useTransform(mouseY, [0, 1], [-depth, depth])
   const ease: Easing = "easeInOut"
 
   // Track pointer down coordinates to distinguish between click and drag accurately
@@ -162,10 +150,7 @@ function Sticker({
 
   return (
     // Outer layer: z-30 on top of hero content, pointer-events-none so space between stickers is free
-    <motion.div
-      className={`pointer-events-none absolute z-30 ${className}`}
-      style={prefersReducedMotion ? undefined : { x: px, y: py }}
-    >
+    <div className={`pointer-events-none absolute z-30 ${className}`}>
       {/* Float layer: entrance animation + idle gentle floating */}
       <motion.div
         initial={{ opacity: 0, scale: 0.5, y: 20 }}
@@ -248,7 +233,7 @@ function Sticker({
           <div className="pointer-events-none select-none">{children}</div>
         )}
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -257,16 +242,12 @@ function Sticker({
 /* ------------------------------------------------------------------ */
 
 export default function FloatingStickers({
-  mouseX,
-  mouseY,
   heroRef,
   onSelectSticker,
 }: FloatingStickersProps) {
   const prefersReducedMotion = useReducedMotion()
 
   const shared = {
-    mouseX,
-    mouseY,
     prefersReducedMotion,
     heroRef,
     onSelect: onSelectSticker,
@@ -279,7 +260,6 @@ export default function FloatingStickers({
         info={STICKER_DATA.ub}
         className="left-[10%] top-[14%] sm:left-[14%] sm:top-[12%] lg:left-[16%] lg:top-[10%]"
         delay={0.6}
-        depth={16}
         float={{ y: 8, rotate: -3, duration: 6 }}
         {...shared}
       >
@@ -301,7 +281,6 @@ export default function FloatingStickers({
         info={STICKER_DATA.laptop}
         className="right-[6%] top-[14%] sm:right-[10%] sm:top-[12%] lg:right-[14%] lg:top-[10%]"
         delay={0.8}
-        depth={18}
         float={{ y: 9, rotate: 4, duration: 6.5 }}
         {...shared}
       >
@@ -323,7 +302,6 @@ export default function FloatingStickers({
         info={STICKER_DATA.cat}
         className="right-2 bottom-0 sm:right-5 md:right-8 md:-bottom-4 lg:right-6 lg:-bottom-6"
         delay={0.7}
-        depth={10}
         float={{ y: 6, duration: 4.8 }}
         {...shared}
       >
@@ -340,7 +318,6 @@ export default function FloatingStickers({
         info={STICKER_DATA.cv}
         className="left-[6%] bottom-[12%] sm:left-[10%] sm:bottom-[12%] lg:left-[14%] lg:bottom-[14%]"
         delay={0.9}
-        depth={14}
         float={{ y: 7, rotate: 2.5, duration: 5.8 }}
         {...shared}
       >

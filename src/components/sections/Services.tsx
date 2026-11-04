@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useMotionValueEvent,
@@ -9,13 +8,12 @@ import {
   useTransform,
 } from "framer-motion";
 import {
-  Smartphone,
+  Cpu,
   Globe,
   Layers,
-  Cpu,
-  ArrowUpRight,
+  Smartphone
 } from "lucide-react";
-import { useLenis } from "@/lib/lenis";
+import { useEffect, useRef, useState } from "react";
 
 interface ServiceItem {
   number: string;
@@ -91,13 +89,11 @@ const services: ServiceItem[] = [
 ];
 
 export default function Services() {
-  const lenis = useLenis();
   const trackRef = useRef<HTMLDivElement>(null);
   const panelsContainerRef = useRef<HTMLDivElement>(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
-  const isClickScrollingRef = useRef(false);
 
   // Track vertical scroll progress across the pinned stage (0 -> 1)
   const { scrollYProgress } = useScroll({
@@ -147,7 +143,6 @@ export default function Services() {
 
   // Synchronize active service index based on scroll progress
   useMotionValueEvent(smoothProgress, "change", (v) => {
-    if (isClickScrollingRef.current) return;
     if (v < 0.18) {
       setActiveIndex(0);
     } else if (v < 0.5) {
@@ -158,42 +153,6 @@ export default function Services() {
       setActiveIndex(3);
     }
   });
-
-  // Smooth click navigation to any service panel
-  const scrollToService = (index: number) => {
-    if (!trackRef.current) return;
-    isClickScrollingRef.current = true;
-    setActiveIndex(index);
-
-    const rect = trackRef.current.getBoundingClientRect();
-    const trackTop = window.scrollY + rect.top;
-    const totalScrollable = trackRef.current.offsetHeight - window.innerHeight;
-
-    // Target the specific progress slice for the selected service
-    const targetProgress = index / (services.length - 1);
-    const targetScrollY = trackTop + totalScrollable * targetProgress;
-
-    if (lenis) {
-      lenis.scrollTo(targetScrollY, {
-        duration: 0.9,
-        easing: (t) =>
-          t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
-        onComplete: () => {
-          setTimeout(() => {
-            isClickScrollingRef.current = false;
-          }, 60);
-        },
-      });
-    } else {
-      window.scrollTo({
-        top: targetScrollY,
-        behavior: "smooth",
-      });
-      setTimeout(() => {
-        isClickScrollingRef.current = false;
-      }, 700);
-    }
-  };
 
   const trackHeight = `${services.length * 100}vh`;
 
@@ -235,8 +194,8 @@ export default function Services() {
             />
 
             {/* Ambient nebulas */}
-            <div className="absolute left-1/4 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#88C0D0]/[0.035] blur-[140px]" />
-            <div className="absolute right-12 bottom-1/4 h-[450px] w-[450px] rounded-full bg-[#81A1C1]/[0.025] blur-[150px]" />
+            <div className="absolute left-1/4 top-1/3 h-125 w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#88C0D0]/[0.035] blur-[140px]" />
+            <div className="absolute right-12 bottom-1/4 h-112.5 w-[450px] rounded-full bg-[#81A1C1]/[0.025] blur-[150px]" />
 
             {/* Subtle star particles */}
             <div className="absolute left-[12%] top-[15%] h-1 w-1 rounded-full bg-white/20" />
@@ -246,63 +205,15 @@ export default function Services() {
           </div>
 
           <div className="relative z-10 mx-auto flex h-full w-full max-w-[1700px] flex-col justify-between px-6 sm:px-10 lg:px-16">
-            {/* =====================================================
-                STICKY TOP BAR (Section Header & Service Navigation)
-            ====================================================== */}
-            <div className="shrink-0 pb-4 pt-1 sm:pb-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="mb-2 flex items-center gap-3">
-                    <span className="font-mono text-xs font-semibold tracking-widest text-[#88C0D0]">
-                      ( 02 )
-                    </span>
-                    <span className="h-px w-6 bg-[#88C0D0]/40" />
-                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/40">
-                      Services & Capabilities
-                    </span>
-                  </div>
-
+           
+           
                   <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl leading-[1.08]">
                     What I can do{" "}
                     <span className="font-normal text-white/35">
                       for your next project.
                     </span>
                   </h2>
-                </div>
-
-                {/* Service Selector Tabs */}
-                <div
-                  role="tablist"
-                  aria-label="Services navigation"
-                  className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1"
-                >
-                  {services.map((service, idx) => {
-                    const isActive = activeIndex === idx;
-                    return (
-                      <button
-                        key={service.number}
-                        role="tab"
-                        aria-selected={isActive}
-                        aria-label={`Service ${service.number}: ${service.title}`}
-                        onClick={() => scrollToService(idx)}
-                        className={`flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
-                          isActive
-                            ? "border border-[#88C0D0]/50 bg-[#88C0D0]/15 text-white shadow-[0_0_20px_rgba(136,192,208,0.15)]"
-                            : "border border-white/10 bg-white/[0.02] text-white/45 hover:border-white/20 hover:text-white/80"
-                        }`}
-                      >
-                        <span className="font-mono text-[11px] font-bold text-[#88C0D0]">
-                          {service.number}
-                        </span>
-                        <span className="hidden sm:inline text-[11px]">
-                          {service.title.split(" ")[0]}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+ 
 
             {/* =====================================================
                 HORIZONTAL MOVING PANELS STAGE
@@ -322,7 +233,7 @@ export default function Services() {
                       key={service.number}
                       className={`group relative flex w-[86vw] sm:w-[74vw] md:w-[64vw] lg:w-[54vw] xl:w-[48vw] max-w-[880px] shrink-0 flex-col justify-between rounded-[2rem] border p-6 sm:p-8 lg:p-10 mr-6 sm:mr-8 lg:mr-10 transition-all duration-500 ${
                         isActive
-                          ? "border-white/20 bg-white/[0.025] shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
+                          ? "border-white/20 bg-white/2.5 shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
                           : "border-white/10 bg-white/[0.012] hover:border-[#88C0D0]/35 hover:bg-white/[0.022]"
                       }`}
                     >
@@ -395,16 +306,6 @@ export default function Services() {
                               </span>
                             ))}
                           </div>
-
-                          <div className="flex items-center gap-1.5 text-xs text-white/30 transition-colors group-hover:text-[#88C0D0]">
-                            <span className="font-mono text-[11px] uppercase tracking-wider">
-                              Explore
-                            </span>
-                            <ArrowUpRight
-                              size={14}
-                              className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                            />
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -420,9 +321,7 @@ export default function Services() {
               <div className="flex items-center justify-between text-xs">
                 {/* Active Service Counter */}
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs font-bold text-[#88C0D0]">
-                    {services[activeIndex]?.number} / 04
-                  </span>
+               
                   <span className="hidden sm:inline text-white/30">•</span>
                   <span className="hidden sm:inline font-medium text-white/60">
                     {services[activeIndex]?.title}

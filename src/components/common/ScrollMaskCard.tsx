@@ -167,7 +167,6 @@ export default function ScrollMaskCard({
     return (-3 + (f + 5) / 10) * (1 - e)
   })
 
-  const imageScale = useTransform(progress, [0, 0.8], [1.25, 1])
   const idleOpacity = useTransform(expand, [0, 0.3], [1, 0])
   const glassOpacity = useTransform(expand, [0, 0.5], [1, 0])
   const dimOpacity = useTransform(progress, [0.3, 0.7], [0, 0.6])
@@ -193,11 +192,8 @@ export default function ScrollMaskCard({
           shadow-2xl
         "
       >
-        {/* Image (object-cover, subtle zoom-out) */}
-        <motion.div
-          style={{ scale: imageScale }}
-          className="absolute inset-0 will-change-transform"
-        >
+        {/* Image (object-cover, static) */}
+        <div className="absolute inset-0">
           {imageSrc && (
             <img
               src={imageSrc}
@@ -211,7 +207,7 @@ export default function ScrollMaskCard({
               }}
             />
           )}
-        </motion.div>
+        </div>
 
         {/* Nord gradient overlay */}
         <div

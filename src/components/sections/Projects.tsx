@@ -282,10 +282,9 @@ function ProjectPanel({
 
   const clipPath = useMotionTemplate`inset(${insetY}% ${insetX}% round ${radius}px)`
 
-  /* ---------- PARALLAX & ZOOM ---------- */
+  /* ---------- PARALLAX ---------- */
 
   const imageY = useTransform(full, [0, 1], ["-7%", "7%"])
-  const imageScale = useTransform(enter, [0, 1], [1.2, 1.04])
   const numberY = useTransform(full, [0, 1], ["12%", "-12%"])
 
   /* ---------- TEXT REVEAL ---------- */
@@ -359,7 +358,6 @@ function ProjectPanel({
                   motionOn
                     ? {
                         y: imageY,
-                        scale: imageScale,
                       }
                     : undefined
                 }
