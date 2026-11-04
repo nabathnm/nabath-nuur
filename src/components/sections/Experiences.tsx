@@ -157,7 +157,7 @@ function StackCard({
                         </div>
                     </div>
 
-                    <h3 className="text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-[#2E3440] leading-tight">
+                    <h3 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-[#2E3440] leading-tight whitespace-nowrap truncate">
                         {experience.role}
                     </h3>
                 </div>
@@ -370,7 +370,7 @@ export default function Experiences() {
                                             aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
                                             onClick={() => scrollToExperience(index)}
                                             onKeyDown={(e) => handleKeyDown(e, index)}
-                                            className={`shrink-0 flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
+                                            className={`shrink-0 flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
                                                 active
                                                     ? "border-[#88C0D0]/40 bg-[#88C0D0]/10 text-white"
                                                     : "border-white/10 bg-white/2 text-white/40 hover:text-white/70"
@@ -379,7 +379,7 @@ export default function Experiences() {
                                             {active && (
                                                 <CatHeadPointer className="h-3.5 w-3.5 shrink-0" />
                                             )}
-                                            {experience.company}
+                                            <span className="whitespace-nowrap">{experience.company}</span>
                                         </button>
                                     );
                                 })}
@@ -398,7 +398,7 @@ export default function Experiences() {
                                 <div
                                     role="tablist"
                                     aria-label="Experiences list"
-                                    className="hidden lg:flex lg:col-span-4 flex-col justify-center space-y-4 sm:space-y-6 lg:space-y-8"
+                                    className="hidden lg:flex lg:col-span-5 flex-col justify-center space-y-4 sm:space-y-6 lg:space-y-8"
                                 >
                                     {experiences.map((experience, index) => {
                                         const active = experience.id === activeId;
@@ -433,9 +433,9 @@ export default function Experiences() {
                                                         )}
                                                     </div>
 
-                                                    <div className="flex flex-col">
+                                                    <div className="flex flex-col min-w-0">
                                                         <span
-                                                            className={`text-2xl sm:text-3xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold transition-all duration-300 ease-in-out leading-10 ${
+                                                            className={`whitespace-nowrap text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-bold transition-all duration-300 ease-in-out leading-tight ${
                                                                 active
                                                                     ? "text-white translate-x-2"
                                                                     : "text-white/25 hover:text-white/60 -translate-x-14"
@@ -454,7 +454,7 @@ export default function Experiences() {
                                     RIGHT COLUMN — SCROLL-DRIVEN CARD STACK
                                     Dynamic Stack Cards from Turso
                                 ================================================== */}
-                                <div className="lg:col-span-8">
+                                <div className="lg:col-span-7">
                                     {/* Stable card stack container with reserved top space for stacking tabs */}
                                     <div className="relative w-full pt-9 sm:pt-10">
                                         <div className="relative w-full h-[490px] sm:h-[510px] lg:h-[530px] xl:h-[540px]">

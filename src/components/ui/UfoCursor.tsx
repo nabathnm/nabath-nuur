@@ -47,8 +47,7 @@ export default function UfoCursor() {
     touchMedia.addEventListener("change", handleTouchChange)
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Offset UFO melayang di sisi kanan atas kursor agar tidak menghalangi titik klik
-      mouseX.set(e.clientX - 55)
+      mouseX.set(e.clientX - 40)
       mouseY.set(e.clientY - 55)
 
       if (!isVisible) setIsVisible(true)

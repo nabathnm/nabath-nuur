@@ -1,7 +1,11 @@
-import { useEffect, useRef } from "react"
 import { motion, useReducedMotion } from "framer-motion"
+import { useEffect, useRef } from "react"
 
-export default function Cat() {
+interface CatProps {
+  className?: string
+}
+
+export default function Cat({ className }: CatProps = {}) {
   const headRef = useRef<SVGGElement>(null)
   const reducedMotion = useReducedMotion()
 
@@ -66,13 +70,16 @@ export default function Cat() {
   }, [])
 
   return (
-    <svg width="500" height="489" viewBox="0 0 600 489" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      className={className}
+      width={className ? undefined : "320"}
+      height={className ? undefined : "489"}
+      viewBox="0 0 600 489"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <g id="cat">
 
-                <g id="alas" transform="translate(10, 140)">
-<path d="M0 60L6.5 122L48 181L318 193L430.5 159.5L452.5 123.5L303.5 162L48 141.5L0 60Z" fill="#485976"/>
-<path d="M320.5 165L433.5 130L447 25.5L291 0L43.5 42L0 60.5L48 143.5L320.5 165Z" fill="#34465E"/>
-                </g>
 
         {/* TAIL — whole tail rotates around its base hinge (origin in tail-local coords) */}
                 <g id="tail" transform="translate(320, 90)">

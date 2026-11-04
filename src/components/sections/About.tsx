@@ -1,11 +1,23 @@
 "use client"
 
-import { motion, useScroll, useSpring, useTransform, type Variants } from "framer-motion"
+import {
+  motion,
+  useAnimationFrame,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  useVelocity,
+  type Variants,
+} from "framer-motion"
 import {
   Globe2,
   Smartphone
 } from "lucide-react"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
+import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import ScrollMaskCard, { ScrollReveal } from "../common/ScrollMaskCard"
 
 /**
@@ -43,8 +55,19 @@ const floatVariants: Variants = {
 }
 
 
+// Pengaturan animasi background marquee (mengikuti gaya title Project)
+const BASE_SPEED = 70 // px/detik, kecepatan pergeseran otomatis (ke kiri)
+const VELOCITY_GAIN = 0.35 // pengaruh kecepatan scroll terhadap pergeseran marquee
+const MAX_VELOCITY = 4000 // batas atas velocity
+const MAX_SKEW = 8 // derajat kemiringan dinamis
+
 export default function About() {
   const trackRef = useRef<HTMLDivElement>(null)
+  const firstGroupRef = useRef<HTMLDivElement>(null)
+  const groupWidthRef = useRef(0)
+
+  const reduce = useReducedMotion() ?? false
+  const inView = useInView(trackRef, { margin: "200px 0px" })
 
   // Progress of the sticky scroll track (0 → 1), smoothed with a spring.
   const { scrollYProgress } = useScroll({
@@ -57,12 +80,70 @@ export default function About() {
     restDelta: 0.001,
   })
 
+  // Velocity scroll untuk akselerasi marquee & dynamic skew
+  const { scrollY } = useScroll()
+  const scrollVelocity = useVelocity(scrollY)
+  const smoothVelocity = useSpring(scrollVelocity, {
+    damping: 50,
+    stiffness: 400,
+  })
+
+  // Posisi horizontal marquee (looping seamless)
+  const x = useMotionValue(0)
+
+  // Skew halus mengikuti scroll velocity
+  const skewX = useTransform(
+    smoothVelocity,
+    [-3000, 0, 3000],
+    [MAX_SKEW, 0, -MAX_SKEW]
+  )
+
+  // Ukur lebar satu grup untuk loop seamless
+  useEffect(() => {
+    const element = firstGroupRef.current
+    if (!element) return
+
+    const update = (width?: number) => {
+      groupWidthRef.current = width ?? element.offsetWidth
+    }
+
+    update()
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      update(entry?.borderBoxSize?.[0]?.inlineSize)
+    })
+
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  // Animasi pergeseran teks kontinu + responsif terhadap scroll velocity
+  useAnimationFrame((_, delta) => {
+    const width = groupWidthRef.current
+    if (reduce || !inView || width <= 0) return
+
+    const dt = Math.min(delta, 64) / 1000
+    const v = Math.max(
+      -MAX_VELOCITY,
+      Math.min(MAX_VELOCITY, smoothVelocity.get())
+    )
+
+    const speed = -BASE_SPEED - v * VELOCITY_GAIN
+    let next = (x.get() + speed * dt) % width
+    if (next > 0) next -= width
+
+    x.set(next)
+  })
+
   // Side content / ambient visuals fade away while the card expands.
   const sideOpacity = useTransform(smoothProgress, [0, 0.18], [1, 0])
   const leftX = useTransform(smoothProgress, [0, 0.18], [0, -48])
   const rightX = useTransform(smoothProgress, [0, 0.18], [0, 48])
   const visualOpacity = useTransform(smoothProgress, [0, 0.3], [1, 0])
   const indicatorOpacity = useTransform(smoothProgress, [0, 0.12], [1, 0])
+  // Marquee background terlihat jelas di posisi awal dan memudar saat card expand
+  const bgMarqueeOpacity = useTransform(smoothProgress, [0, 0.25], [1, 0])
   const gridPointerEvents = useTransform(
     smoothProgress,
     (v: number): "auto" | "none" => (v > 0.2 ? "none" : "auto")
@@ -117,6 +198,64 @@ export default function About() {
 
       <div ref={trackRef} className="relative z-10 h-[200vh]">
         <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
+
+          {/* =====================================================
+              BACKGROUND MARQUEE (Teks besar bergeser di posisi awal)
+              Terinspirasi dari style title pada section Project
+          ====================================================== */}
+          <motion.div
+            style={{ opacity: bgMarqueeOpacity }}
+            className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden select-none"
+            aria-hidden="true"
+          >
+            {/* Wrapper: skew dinamis mengikuti kecepatan scroll */}
+            <motion.div
+              style={reduce ? undefined : { skewX }}
+              className="will-change-transform"
+            >
+              {/* Track: pergeseran horizontal kontinu (translate X) */}
+              <motion.div
+                style={{ x: reduce ? 0 : x }}
+                className="flex w-max transform-gpu items-center whitespace-nowrap will-change-transform"
+              >
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div
+                    key={index}
+                    ref={index === 0 ? firstGroupRef : undefined}
+                    className="flex shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12 lg:gap-16 lg:pr-16"
+                  >
+                    <span className="text-[clamp(4.5rem,15vw,13rem)] font-bold tracking-tighter text-white/[0.09] leading-none">
+                      About
+                    </span>
+
+                    <span
+                      className="text-[clamp(4.5rem,15vw,13rem)] font-bold tracking-tighter text-transparent leading-none"
+                      style={{
+                        WebkitTextStroke: "1.5px rgba(255,255,255,0.22)",
+                      }}
+                    >
+                      Me
+                    </span>
+
+                    <CatHeadPointer
+                      className="h-[clamp(2.5rem,7vw,6.5rem)] w-[clamp(2.5rem,7vw,6.5rem)] shrink-0 opacity-25 drop-shadow-[0_2px_12px_rgba(136,192,208,0.25)]"
+                    />
+                  </div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
+          {/* Header badge kecil di posisi awal */}
+          <motion.div
+            style={{ opacity: indicatorOpacity }}
+            className="pointer-events-none absolute top-8 sm:top-10 left-6 md:left-8 lg:left-12 z-20 flex items-center gap-3"
+          >
+            <span className="h-px w-8 bg-white/30" />
+            <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
+              About
+            </span>
+          </motion.div>
 
           {/* Grid: side columns + orbit/labels (card is rendered separately) */}
           <motion.div

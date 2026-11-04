@@ -5,33 +5,108 @@ import {
   type Easing,
   type MotionValue,
 } from "framer-motion"
+import { useRef } from "react"
+import laptopImg from "../sticker/laptop.png"
+import ubImg from "../sticker/ub.png"
+import cvImg from "../sticker/cv.png"
+import Cat from "../svg/Cat"
+import { type StickerInfo } from "./TerminalModal"
+
+export const STICKER_DATA: Record<string, StickerInfo> = {
+  ub: {
+    id: "academics",
+    command: "cat ~/education/universitas-brawijaya.md",
+    title: "Universitas Brawijaya (UB)",
+    badge: "ACADEMICS",
+    badgeColor: "border border-amber-400/30 bg-amber-400/10 text-amber-300",
+    description:
+      "Pursuing a degree in Information Technology / Computer Science at Universitas Brawijaya. Focused on software engineering, algorithms, mobile architecture, and scalable system design.",
+    fields: [
+      { label: "Institution", value: "Universitas Brawijaya, Malang" },
+      { label: "Faculty / Major", value: "Computer Science / Information Technology" },
+      { label: "Key Studies", value: "Mobile Development, Distributed Systems, Software Engineering" },
+      { label: "Status", value: "Active Student & Technology Builder" },
+    ],
+  },
+  laptop: {
+    id: "workstation",
+    command: "neofetch --hardware --developer-profile",
+    title: "Developer Workstation",
+    badge: "BATTLESTATION",
+    badgeColor: "border border-cyan-400/30 bg-cyan-400/10 text-cyan-300",
+    description:
+      "Primary engineering workstation configured for high productivity, clean aesthetics, and rapid iteration across cross-platform mobile apps and web platforms.",
+    fields: [
+      { label: "Core Tools", value: "VS Code, Android Studio, Figma, Git" },
+      { label: "Operating System", value: "Linux / macOS (Nord Theme Aesthetic)" },
+      { label: "Shell & Terminal", value: "Zsh + Starship Prompt with modern CLI utilities" },
+      { label: "Daily Driver", value: "Tested in high-stress hackathons & production builds" },
+    ],
+  },
+  cat: {
+    id: "cosmo-cat",
+    command: "cat /proc/copilot/status",
+    title: "Cosmo the Astronaut Cat",
+    badge: "MISSION CO-PILOT",
+    badgeColor: "border border-amber-400/30 bg-amber-400/10 text-amber-300",
+    description:
+      "Senior Rubber Duck Debugger and Cosmic Navigator. Observes all cursor trajectories with helmet servos and purrs softly when code compiles with zero errors.",
+    fields: [
+      { label: "Species", value: "Felis catus astronauticus" },
+      { label: "Duty", value: "Code inspection & moral support" },
+      { label: "Tracking", value: "Active interactive head movement following your pointer" },
+      { label: "Favorite Fuel", value: "Tuna & Space Milk 🐟" },
+      { label: "Status", value: "Purring in binary • 100% mission readiness" },
+    ],
+    
+  },
+  cv: {
+    id: "curriculum-vitae",
+    command: "cat ~/documents/curriculum-vitae.md",
+    title: "Curriculum Vitae (CV)",
+    badge: "RESUME / PROFILE",
+    badgeColor: "border border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+    description:
+      "Comprehensive profile highlighting software engineering background, mobile & frontend development expertise, academic milestones, and project track record.",
+    fields: [
+      { label: "Full Name", value: "Muhammad Nabath Nuur Maulana" },
+      { label: "Role", value: "Mobile & Frontend Engineer" },
+      { label: "Key Stack", value: "Flutter, React, TypeScript, Next.js, Tailwind CSS" },
+      { label: "Education", value: "Universitas Brawijaya (Informatics)" },
+      { label: "Status", value: "Open for Software Engineering opportunities" },
+    ],
+  },
+}
 
 interface FloatingStickersProps {
   mouseX: MotionValue<number>
   mouseY: MotionValue<number>
+  heroRef?: React.RefObject<HTMLElement | null>
+  onSelectSticker: (info: StickerInfo) => void
 }
 
 /* ------------------------------------------------------------------ */
-/*  Shared wrapper — handles entrance, parallax, and floating          */
+/*  Sticker Wrapper (Positioning + Parallax + Float + Drag + Tap)     */
 /* ------------------------------------------------------------------ */
 
 interface StickerProps {
   children: React.ReactNode
-  /** Extra Tailwind classes (positioning, visibility, z-index, etc.) */
+  info?: StickerInfo
   className?: string
-  /** Entrance delay in seconds */
   delay?: number
-  /** Parallax intensity — higher = more movement */
   depth?: number
-  /** Continuous float amplitude & period */
   float?: { y?: number; x?: number; rotate?: number; duration?: number }
   mouseX: MotionValue<number>
   mouseY: MotionValue<number>
   prefersReducedMotion: boolean | null
+  heroRef?: React.RefObject<HTMLElement | null>
+  onSelect?: (info: StickerInfo) => void
+  isInteractive?: boolean
 }
 
 function Sticker({
   children,
+  info,
   className = "",
   delay = 0.4,
   depth = 10,
@@ -39,20 +114,59 @@ function Sticker({
   mouseX,
   mouseY,
   prefersReducedMotion,
+  heroRef,
+  onSelect,
+  isInteractive = true,
 }: StickerProps) {
-  // Parallax — driven by cursor MotionValues, applied via `style`
   const px = useTransform(mouseX, [0, 1], [-depth, depth])
   const py = useTransform(mouseY, [0, 1], [-depth, depth])
-
   const ease: Easing = "easeInOut"
 
+  // Track pointer down coordinates to distinguish between click and drag accurately
+  const downCoordsRef = useRef<{ x: number; y: number } | null>(null)
+  const isDraggingRef = useRef(false)
+  const lastTriggeredRef = useRef(0)
+
+  const triggerSelect = () => {
+    const now = performance.now()
+    if (now - lastTriggeredRef.current < 250) return // prevent duplicate trigger
+    lastTriggeredRef.current = now
+    if (info && onSelect) {
+      onSelect(info)
+    }
+  }
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    downCoordsRef.current = { x: e.clientX, y: e.clientY }
+    isDraggingRef.current = false
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!downCoordsRef.current) return
+    const dx = e.clientX - downCoordsRef.current.x
+    const dy = e.clientY - downCoordsRef.current.y
+    const distance = Math.hypot(dx, dy)
+    downCoordsRef.current = null
+
+    // If pointer moved less than 8px, it is definitively a click!
+    if (distance < 8 && !isDraggingRef.current) {
+      triggerSelect()
+    }
+  }
+
+  const handleTap = () => {
+    if (!isDraggingRef.current) {
+      triggerSelect()
+    }
+  }
+
   return (
-    // Outer layer: positioning + cursor parallax (style-driven, no animate)
+    // Outer layer: z-30 on top of hero content, pointer-events-none so space between stickers is free
     <motion.div
-      className={`pointer-events-none absolute z-10 ${className}`}
+      className={`pointer-events-none absolute z-30 ${className}`}
       style={prefersReducedMotion ? undefined : { x: px, y: py }}
     >
-      {/* Inner layer: entrance + continuous floating animation */}
+      {/* Float layer: entrance animation + idle gentle floating */}
       <motion.div
         initial={{ opacity: 0, scale: 0.5, y: 20 }}
         animate={
@@ -67,7 +181,6 @@ function Sticker({
               }
         }
         transition={{
-          /* entrance */
           opacity: { duration: prefersReducedMotion ? 0 : 0.6, delay },
           scale: {
             duration: prefersReducedMotion ? 0 : 0.5,
@@ -76,227 +189,175 @@ function Sticker({
             stiffness: 260,
             damping: 20,
           },
-          /* continuous floating */
           ...(prefersReducedMotion
             ? {}
             : {
                 y: float.y
-                  ? { repeat: Infinity, repeatType: "mirror" as const, duration: float.duration ?? 5, ease }
+                  ? {
+                      repeat: Infinity,
+                      repeatType: "mirror" as const,
+                      duration: float.duration ?? 5,
+                      ease,
+                    }
                   : undefined,
                 x: float.x
-                  ? { repeat: Infinity, repeatType: "mirror" as const, duration: (float.duration ?? 5) * 1.15, ease }
+                  ? {
+                      repeat: Infinity,
+                      repeatType: "mirror" as const,
+                      duration: (float.duration ?? 5) * 1.15,
+                      ease,
+                    }
                   : undefined,
                 rotate: float.rotate
-                  ? { repeat: Infinity, repeatType: "mirror" as const, duration: (float.duration ?? 5) * 1.3, ease }
+                  ? {
+                      repeat: Infinity,
+                      repeatType: "mirror" as const,
+                      duration: (float.duration ?? 5) * 1.3,
+                      ease,
+                    }
                   : undefined,
               }),
         }}
       >
-        {children}
+        {isInteractive ? (
+          // Drag layer: draggable, tactile, clickable to launch terminal
+          <motion.div
+            drag
+            dragConstraints={heroRef}
+            dragElastic={0.2}
+            dragMomentum={true}
+            whileHover={{ scale: 1.08 }}
+            whileDrag={{ scale: 1.15, zIndex: 60 }}
+            onDragStart={() => {
+              isDraggingRef.current = true
+            }}
+            onDragEnd={() => {
+              setTimeout(() => {
+                isDraggingRef.current = false
+              }, 80)
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onTap={handleTap}
+            className="pointer-events-auto cursor-pointer active:cursor-grabbing select-none touch-none"
+            title={info ? `Click to inspect ${info.title} (or drag me!)` : undefined}
+          >
+            {children}
+          </motion.div>
+        ) : (
+          <div className="pointer-events-none select-none">{children}</div>
+        )}
       </motion.div>
     </motion.div>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main component                                                     */
+/*  Main Floating Stickers Composition (NO EXTRA STICKERS)           */
 /* ------------------------------------------------------------------ */
 
-export default function FloatingStickers({ mouseX, mouseY }: FloatingStickersProps) {
+export default function FloatingStickers({
+  mouseX,
+  mouseY,
+  heroRef,
+  onSelectSticker,
+}: FloatingStickersProps) {
   const prefersReducedMotion = useReducedMotion()
 
-  const shared = { mouseX, mouseY, prefersReducedMotion }
+  const shared = {
+    mouseX,
+    mouseY,
+    prefersReducedMotion,
+    heroRef,
+    onSelect: onSelectSticker,
+  }
 
   return (
     <>
-      {/* ─── 1. "Software Developer" pill — top-left ───────────── */}
+      {/* ─── 1. Universitas Brawijaya (UB) Sticker ──────────────── */}
       <Sticker
-        className="left-[4%] top-[12%] hidden lg:block xl:left-[7%]"
-        delay={0.5}
-        depth={15}
-        float={{ y: 10, duration: 5.5 }}
+        info={STICKER_DATA.ub}
+        className="left-[10%] top-[14%] sm:left-[14%] sm:top-[12%] lg:left-[16%] lg:top-[10%]"
+        delay={0.6}
+        depth={16}
+        float={{ y: 8, rotate: -3, duration: 6 }}
         {...shared}
       >
-        <div
-          className="-rotate-3 rounded-full bg-[#88C0D0] px-4 py-1.5 shadow-lg shadow-[#88C0D0]/20"
-        >
-          <span className="text-xs font-bold tracking-wide text-[#2E3440]">
-            Software Developer
+        <div className="group/item relative rounded-3xl p-3 sm:p-4 transition-all duration-300 hover:drop-shadow-[0_12px_30px_rgba(235,203,139,0.45)]">
+          <img
+            src={ubImg}
+            alt="Universitas Brawijaya"
+            className="h-18 w-18 sm:h-22 sm:w-22 md:h-24 md:w-24 object-contain drop-shadow-md transition-transform duration-300 group-hover/item:scale-105 pointer-events-auto"
+            draggable={false}
+          />
+          <span className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#2E3440]/90 px-2 py-0.5 text-[10px] font-mono text-[#88C0D0] opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover/item:opacity-100 border border-white/10">
+            tap to inspect
           </span>
         </div>
       </Sticker>
 
-      {/* ─── 2. "Available for Work" — top-right ─────────────── */}
+      {/* ─── 2. Developer Laptop Sticker ────────────────────── */}
       <Sticker
-        className="right-[4%] top-[10%] sm:right-[6%] sm:top-[11%]"
-        delay={0.3}
-        depth={8}
-        float={{ y: 6, duration: 4 }}
-        {...shared}
-      >
-        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 shadow-xl backdrop-blur-md">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-          </span>
-          <span className="text-[10px] font-medium text-white/80 sm:text-xs">
-            Available for Work
-          </span>
-        </div>
-      </Sticker>
-
-      {/* ─── 3. React icon — left side, slightly below center ── */}
-      <Sticker
-        className="left-[3%] top-[55%] hidden md:block lg:left-[5%] lg:top-[52%]"
+        info={STICKER_DATA.laptop}
+        className="right-[6%] top-[14%] sm:right-[10%] sm:top-[12%] lg:right-[14%] lg:top-[10%]"
         delay={0.8}
         depth={18}
-        float={{ y: 12, x: 4, duration: 6 }}
+        float={{ y: 9, rotate: 4, duration: 6.5 }}
         {...shared}
       >
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#61DAFB] shadow-lg shadow-[#61DAFB]/20">
-          <svg
-            viewBox="-11 -11 22 22"
-            className="h-6 w-6"
-            fill="none"
-            stroke="#2E3440"
-            strokeWidth="1"
-          >
-            <circle cx="0" cy="0" r="2" fill="#2E3440" stroke="none" />
-            <ellipse rx="10" ry="4" />
-            <ellipse rx="10" ry="4" transform="rotate(60)" />
-            <ellipse rx="10" ry="4" transform="rotate(120)" />
-          </svg>
-        </div>
-      </Sticker>
-
-      {/* ─── 4. TypeScript badge — right side ─────────────────── */}
-      <Sticker
-        className="right-[3%] top-[50%] hidden xl:block"
-        delay={1.0}
-        depth={12}
-        float={{ y: 7, rotate: 3, duration: 5 }}
-        {...shared}
-      >
-        <div className="rotate-[6deg] rounded-lg bg-[#3178C6] p-2 shadow-lg shadow-[#3178C6]/20">
-          <span className="text-xs font-extrabold leading-none text-white">
-            TS
+        <div className="group/item relative rounded-3xl p-3 sm:p-4 transition-all duration-300 hover:drop-shadow-[0_12px_30px_rgba(136,192,208,0.45)]">
+          <img
+            src={laptopImg}
+            alt="Developer Workstation"
+            className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 object-contain drop-shadow-md transition-transform duration-300 group-hover/item:scale-105 pointer-events-auto"
+            draggable={false}
+          />
+          <span className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#2E3440]/90 px-2 py-0.5 text-[10px] font-mono text-[#88C0D0] opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover/item:opacity-100 border border-white/10">
+            tap to inspect
           </span>
         </div>
       </Sticker>
 
-      {/* ─── 5. Flutter / Dart badge — bottom-left ──────────── */}
+      {/* ─── 3. Cosmo the Astronaut Cat Sticker ────────────── */}
       <Sticker
-        className="bottom-[22%] left-[6%] hidden lg:block xl:left-[10%]"
-        delay={1.1}
-        depth={14}
-        float={{ y: 9, x: 3, duration: 6.5 }}
-        {...shared}
-      >
-        <div className="flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-[#42A5F5] to-[#88C0D0] px-3 py-1.5 shadow-lg">
-          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="white">
-            <polygon points="8,0 16,8 8,8 8,0" />
-            <polygon points="8,8 16,8 8,16 0,8" opacity="0.7" />
-          </svg>
-          <span className="text-[10px] font-bold text-white">Flutter</span>
-        </div>
-      </Sticker>
-
-
-      {/* ─── 7. Planet sticker — top area ──────────────────── */}
-      <Sticker
-        className="left-[28%] top-[5%] hidden md:block lg:left-[22%]"
+        info={STICKER_DATA.cat}
+        className="right-2 bottom-0 sm:right-5 md:right-8 md:-bottom-4 lg:right-6 lg:-bottom-6"
         delay={0.7}
-        depth={20}
-        float={{ y: 10, rotate: 5, duration: 7 }}
-        {...shared}
-      >
-        <svg viewBox="0 0 36 36" className="h-8 w-8 lg:h-9 lg:w-9" fill="none">
-          <defs>
-            <linearGradient id="planet-grad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#B48EAD" />
-              <stop offset="100%" stopColor="#88C0D0" />
-            </linearGradient>
-          </defs>
-          <circle cx="18" cy="18" r="8" fill="url(#planet-grad)" />
-          <ellipse
-            cx="18"
-            cy="18"
-            rx="16"
-            ry="5"
-            stroke="url(#planet-grad)"
-            strokeWidth="1.5"
-            transform="rotate(-20 18 18)"
-            opacity="0.7"
-          />
-        </svg>
-      </Sticker>
-
-      {/* ─── 8. Star clusters ──────────────────────────────── */}
-      {/* Group A — subtle stars, visible on mobile */}
-      <Sticker
-        className="left-[15%] top-[30%] sm:left-[20%] sm:top-[26%]"
-        delay={0.6}
-        depth={5}
-        float={{ y: 5, duration: 3.5 }}
-        {...shared}
-      >
-        <span className="select-none text-[10px] text-white/25" aria-hidden>
-          ✦
-        </span>
-      </Sticker>
-
-      <Sticker
-        className="right-[10%] top-[35%] sm:right-[15%] sm:top-[30%]"
-        delay={0.75}
-        depth={6}
-        float={{ y: 4, x: 2, duration: 4 }}
-        {...shared}
-      >
-        <span className="select-none text-[8px] text-white/20" aria-hidden>
-          ✦
-        </span>
-      </Sticker>
-
-      <Sticker
-        className="right-[22%] top-[8%] sm:right-[25%]"
-        delay={0.9}
-        depth={4}
+        depth={10}
         float={{ y: 6, duration: 4.8 }}
         {...shared}
       >
-        <span className="select-none text-[6px] text-white/20" aria-hidden>
-          ✦
-        </span>
-      </Sticker>
-
-      {/* Group B — bottom-left */}
-      <Sticker
-        className="bottom-[30%] left-[8%] sm:bottom-[35%] sm:left-[12%]"
-        delay={1.0}
-        depth={5}
-        float={{ y: 5, duration: 3.8 }}
-        {...shared}
-      >
-        <span className="select-none text-[8px] text-white/25" aria-hidden>
-          ✦
-        </span>
-      </Sticker>
-
-
-      {/* ─── 10. Year badge — bottom-right, above Cat ─────── */}
-      <Sticker
-        className="bottom-[20%] right-[14%] hidden lg:block"
-        delay={1.4}
-        depth={8}
-        float={{ y: 5, duration: 4.2 }}
-        {...shared}
-      >
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1 shadow-xl backdrop-blur-md">
-          <span className="text-[10px] font-semibold tabular-nums text-white/60">
-            {new Date().getFullYear()}
+        <div className="group/cat relative w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 select-none p-2 transition-transform duration-300 hover:drop-shadow-[0_12px_35px_rgba(136,192,208,0.35)]">
+          <Cat className="w-full h-auto drop-shadow-md pointer-events-auto" />
+          <span className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#2E3440]/90 px-2 py-0.5 text-[10px] font-mono text-[#88C0D0] opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover/cat:opacity-100 border border-white/10">
+            drag or tap Cosmo
           </span>
         </div>
       </Sticker>
+
+      {/* ─── 4. Curriculum Vitae (CV) Sticker ──────────────── */}
+      <Sticker
+        info={STICKER_DATA.cv}
+        className="left-[6%] bottom-[12%] sm:left-[10%] sm:bottom-[12%] lg:left-[14%] lg:bottom-[14%]"
+        delay={0.9}
+        depth={14}
+        float={{ y: 7, rotate: 2.5, duration: 5.8 }}
+        {...shared}
+      >
+        <div className="group/item relative rounded-3xl p-3 sm:p-4 transition-all duration-300 hover:drop-shadow-[0_12px_30px_rgba(163,190,140,0.45)]">
+          <img
+            src={cvImg}
+            alt="Curriculum Vitae"
+            className="w-22 sm:w-26 md:w-30 lg:w-32 h-auto object-contain drop-shadow-md transition-transform duration-300 group-hover/item:scale-105 pointer-events-auto"
+            draggable={false}
+          />
+          <span className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#2E3440]/90 px-2 py-0.5 text-[10px] font-mono text-[#88C0D0] opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover/item:opacity-100 border border-white/10">
+            tap to inspect
+          </span>
+        </div>
+      </Sticker>
+
+      
     </>
   )
 }
