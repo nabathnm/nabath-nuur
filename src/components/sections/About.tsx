@@ -36,7 +36,7 @@ function getDirectImageUrl(url: string): string {
 
 // Link foto profil publik langsung dari Supabase Storage / hosting eksternal
 const PROFILE_IMAGE =
-  "https://dgapjusikgybitsessku.supabase.co/storage/v1/object/public/projects/jowoki.jpg"
+  "https://dgapjusikgybitsessku.supabase.co/storage/v1/object/public/projects/nabati.JPG"
 
 // Pengaturan animasi background marquee (mengikuti gaya title Project)
 const BASE_SPEED = 70 // px/detik, kecepatan pergeseran otomatis (ke kiri)
@@ -142,7 +142,28 @@ export default function About() {
       ====================================================== */}
 
       <div ref={trackRef} className="relative z-10 h-[200vh]">
-        <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
+        <div className="sticky -top-20 flex h-dvh w-full items-center justify-center overflow-hidden">
+          {/* =====================================================
+              SECTION MINI HEADER (Consistent with Projects & Tools)
+          ====================================================== */}
+          <motion.div
+            style={{ opacity: bgMarqueeOpacity }}
+            className="pointer-events-none absolute top-8 inset-x-0 z-20"
+          >
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
+              <div className="flex items-center gap-3">
+                <span className="h-px w-8 bg-white/30" />
+
+                <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
+                  About
+                </span>
+              </div>
+
+              <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
+                (01) Biography
+              </span>
+            </div>
+          </motion.div>
 
           {/* =====================================================
               BACKGROUND MARQUEE (Teks besar bergeser di posisi awal)
@@ -238,39 +259,8 @@ export default function About() {
               <ScrollReveal
                 progress={smoothProgress}
                 range={[0.38, 0.52]}
-                className="mb-6 flex items-center gap-3"
-              >
-                <span className="h-px w-8 bg-white/30" />
-                <span className="h-px w-8 bg-white/30" />
+                className="mb-6 flex items-center gap-3" children={undefined}              >
               </ScrollReveal>
-
-              <ScrollReveal progress={smoothProgress} range={[0.45, 0.62]}>
-                <h2 className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl md:text-8xl">
-                  More than
-                  <br />
-                  <span className="text-white/40">just code.</span>
-                </h2>
-              </ScrollReveal>
-
-              <ScrollReveal
-                progress={smoothProgress}
-                range={[0.55, 0.72]}
-                className="mt-8 max-w-xl"
-              >
-                <p className="text-sm leading-7 text-white/70 md:text-base">
-                  Hi! I'm Nabath Nuur, an Information Technology
-                  student at the Faculty of Computer Science,
-                  Brawijaya University.
-                </p>
-
-                <p className="mt-4 text-sm leading-7 text-white/50 md:text-base">
-                  I enjoy building interfaces that are simple,
-                  functional, and enjoyable to use — with a focus on
-                  web development, mobile applications, and software
-                  engineering.
-                </p>
-              </ScrollReveal>
-
             </div>
           </ScrollMaskCard>
 

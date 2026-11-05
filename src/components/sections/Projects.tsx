@@ -1,5 +1,6 @@
 "use client"
 
+import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import { useLenis } from "@/lib/lenis"
 import {
   motion,
@@ -16,7 +17,6 @@ import {
 } from "framer-motion"
 import Snap from "lenis/snap"
 import { useEffect, useId, useRef } from "react"
-import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import { useProjects } from "../../hooks/useProjects"
 import Glass from "../ui/glass"
 
@@ -154,7 +154,7 @@ function SelectedWorkHeader({ count }: { count: number }) {
   return (
     <div ref={ref} className="relative z-10 mb-16 md:mb-10">
       {/* Small header */}
-      <div className="mx-auto mb-8 flex max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-12">
+      <div className="mx-auto mb-8 flex max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
         <div className="flex items-center gap-3">
           <span className="h-px w-8 bg-white/30" />
 
@@ -248,21 +248,11 @@ function ProjectPanel({
   const imageLeft = index % 2 === 0
   const motionOn = !reduce
 
-  /*
-   * Image reveal progress.
-   *
-   * Reveal dimulai saat project memasuki viewport dari bawah
-   * dan selesai saat bagian atas project mencapai IMAGE_REVEAL_OFFSET.
-   */
   const { scrollYProgress: enterRaw } = useScroll({
     target: ref,
     offset: ["start end", `start ${IMAGE_REVEAL_OFFSET}`],
   })
 
-  /*
-   * Progress scroll keseluruhan project.
-   * Digunakan untuk parallax gambar dan nomor dekoratif.
-   */
   const { scrollYProgress: full } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
@@ -275,13 +265,11 @@ function ProjectPanel({
   })
 
   /* ---------- IMAGE MASK REVEAL ---------- */
-
   const insetY = useTransform(enter, [0, 1], [16, 0])
   const insetX = useTransform(enter, [0, 1], [10, 0])
-  const radius = useTransform(enter, [0, 1], [48, 32])
+  const radius = useTransform(enter, [0, 1], [100, 32])
 
   const clipPath = useMotionTemplate`inset(${insetY}% ${insetX}% round ${radius}px)`
-
   /* ---------- PARALLAX ---------- */
 
   const imageY = useTransform(full, [0, 1], ["-7%", "7%"])
@@ -451,7 +439,7 @@ function ProjectList({
   reduce: boolean
 }) {
   return (
-    <div className="relative z-10 px-2 md:px-25 snap-y snap-proximity">
+    <div className="relative z-10 px-2 md:px-16 snap-y snap-proximity">
       {projects.map((project, index) => (
         <ProjectPanel
           key={project.id}
@@ -539,7 +527,7 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="relative overflow-x-clip bg-transparent pb-24 pt-24 text-white md:pt-32 snap-y snap-proximity"
+      className="relative overflow-x-clip bg-transparent pt-24 text-white md:pt-10 snap-y snap-proximity"
     >
       <SelectedWorkHeader count={projects.length} />
 

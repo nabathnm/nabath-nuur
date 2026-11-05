@@ -1,4 +1,3 @@
-import { motion } from "framer-motion"
 
 import Navbar from "./components/layout/Navbar"
 import About from "./components/sections/About"
@@ -14,7 +13,7 @@ export function App() {
   return (
     <div className="relative min-h-screen w-full bg-[#2E3440]">
       {/* Global Ambient Background with framer-motion */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      {/* <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <motion.div
           animate={{
             scale: [1, 1.2, 1],
@@ -39,7 +38,7 @@ export function App() {
           }}
           className="absolute -right-32 -bottom-40 h-[28rem] w-[28rem] rounded-full bg-white/[0.01] blur-3xl"
         />
-      </div>
+      </div> */}
 
       <Navbar />
 

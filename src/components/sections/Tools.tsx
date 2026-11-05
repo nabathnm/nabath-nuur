@@ -2,7 +2,7 @@
 
 import { useTools } from "@/hooks/useTools";
 import type { Tool } from "@/models/tool";
-import { Cpu, Sparkles } from "lucide-react";
+import { Cpu } from "lucide-react";
 import React from "react";
 
 /* =====================================================
@@ -21,6 +21,8 @@ const SEPARATORS: Separator[] = [
   { type: "dot", value: "●" },
   { type: "glyph", value: "✧" },
 ];
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 /* =====================================================
    EDITORIAL TOOL ITEM COMPONENT (CONSISTENT DESIGN & FONTS)
@@ -202,77 +204,23 @@ export default function Tools() {
   return (
     <section
       id="tools"
-      className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-[#2E3440] text-white py-24 sm:py-28 lg:py-32 select-none"
+      className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-[#2E3440] text-white pt-10 sm:py-10 lg:py-10 select-none"
     >
       {/* =====================================================
-          AMBIENT COSMIC BACKGROUND (Consistent with Services & About)
+          SECTION HEADER (Consistent with Projects section)
       ====================================================== */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)
-            `,
-            backgroundSize: "90px 90px",
-            maskImage:
-              "radial-gradient(circle at 50% 40%, black 0%, transparent 80%)",
-            WebkitMaskImage:
-              "radial-gradient(circle at 50% 40%, black 0%, transparent 80%)",
-          }}
-        />
+      <div className="relative z-10 mx-auto mb-8 flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
+        <div className="flex items-center gap-3">
+          <span className="h-px w-8 bg-white/30" />
 
-        {/* Ambient nebulas in Nord cyan & steel */}
-        <div className="absolute left-1/4 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#88C0D0]/[0.035] blur-[140px]" />
-        <div className="absolute right-12 bottom-1/4 h-[450px] w-[450px] rounded-full bg-[#81A1C1]/[0.025] blur-[150px]" />
-
-        {/* Subtle celestial stars */}
-        <div className="absolute left-[12%] top-[15%] h-1 w-1 rounded-full bg-white/20" />
-        <div className="absolute right-[18%] top-[35%] h-[2px] w-[2px] rounded-full bg-white/30" />
-        <div className="absolute left-[24%] bottom-[20%] h-[3px] w-[3px] rounded-full bg-white/15" />
-        <div className="absolute right-[8%] bottom-[30%] h-1 w-1 rounded-full bg-[#88C0D0]/30" />
-      </div>
-
-      {/* =====================================================
-          SECTION HEADER (Consistent with Services & Projects)
-      ====================================================== */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1700px] flex-col justify-between px-6 sm:px-10 lg:px-16 mb-10 sm:mb-14 lg:mb-16">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.08] pb-6 sm:pb-8">
-          <div>
-            {/* Index label */}
-            <div className="mb-2.5 flex items-center gap-3">
-              <span className="font-mono text-xs font-semibold tracking-widest text-[#88C0D0]">
-                ( 03 )
-              </span>
-              <span className="h-px w-6 bg-[#88C0D0]/40" />
-              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/40">
-                Tech Arsenal & Ecosystem
-              </span>
-            </div>
-
-            {/* Consistent Headline matching Services format */}
-            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl leading-[1.08]">
-              Tech Stack &{" "}
-              <span className="font-normal text-white/35">
-                Development Arsenal.
-              </span>
-            </h2>
-          </div>
-
-          {/* Subtitle / Lead text */}
-          <div className="max-w-md text-left md:text-right">
-            <p className="text-sm leading-relaxed text-white/60 font-normal">
-              A curated suite of modern frameworks, languages, and cloud tooling
-              powering high-performance digital products.
-            </p>
-            <div className="mt-2.5 flex items-center md:justify-end gap-2 text-[10px] font-mono text-[#88C0D0]/80 tracking-wider uppercase">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#88C0D0] animate-pulse" />
-              <span>Hover marquee to pause & inspect</span>
-            </div>
-          </div>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
+            Tools
+          </span>
         </div>
+
+        <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
+          ({pad(tools.length)}) Selected
+        </span>
       </div>
 
       {/* =====================================================
@@ -329,25 +277,7 @@ export default function Tools() {
       {/* =====================================================
           BOTTOM STATUS TELEMETRY BAR (Consistent with Services Footer)
       ====================================================== */}
-      <div className="relative z-10 mx-auto w-full max-w-[1700px] px-6 sm:px-10 lg:px-16 mt-10 sm:mt-14">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/[0.08] pt-5 text-xs text-white/40">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-[#88C0D0] flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              TURSO_DB
-            </span>
-            <span className="text-white/30">•</span>
-            <span className="font-mono text-[11px] text-white/60">
-              {tools.length} TOOLS SYNCED
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 font-mono text-[11px] tracking-wider uppercase text-white/35">
-            <span className="hidden md:inline">SYS://ORBITAL_ARSENAL</span>
-            <span className="text-[#88C0D0]/80">STREAM ONLINE // 60FPS</span>
-          </div>
-        </div>
-      </div>
+     
     </section>
   );
 }

@@ -1,5 +1,5 @@
-import { motion, type Variants } from "framer-motion"
-import { useRef, useState } from "react"
+import { motion, useMotionValue, useSpring, useTransform, type Variants } from "framer-motion"
+import { useEffect, useRef, useState } from "react"
 import FloatingStickers from "../common/FloatingStickers"
 import MagneticHeadline from "../common/MagneticHeadline"
 import TerminalModal, { type StickerInfo } from "../common/TerminalModal"
@@ -7,6 +7,28 @@ import TerminalModal, { type StickerInfo } from "../common/TerminalModal"
 export default function Hero() {
   const heroRef = useRef<HTMLElement>(null)
   const [selectedSticker, setSelectedSticker] = useState<StickerInfo | null>(null)
+
+  /* ---- Animated Grid: slow autonomous drift + subtle mouse parallax ---- */
+  const GRID_SIZE = 80
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+
+  // Gentle spring following the cursor for subtle parallax
+  const springX = useSpring(mouseX, { damping: 60, stiffness: 30, mass: 1 })
+  const springY = useSpring(mouseY, { damping: 60, stiffness: 30, mass: 1 })
+
+  // Map cursor position to small grid shift (±12px range)
+  const parallaxX = useTransform(springX, [0, 1], [-12, 12])
+  const parallaxY = useTransform(springY, [0, 1], [-12, 12])
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX / window.innerWidth)
+      mouseY.set(e.clientY / window.innerHeight)
+    }
+    window.addEventListener("mousemove", handleMouseMove, { passive: true })
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [mouseX, mouseY])
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -44,19 +66,49 @@ export default function Hero() {
           BACKGROUND
       ====================================================== */}
 
-      {/* Subtle grid */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
+      {/* Slowly drifting grid with mouse parallax */}
+      <motion.div
+        className="pointer-events-none absolute inset-[-80px] opacity-[0.04]"
         style={{
+          x: parallaxX,
+          y: parallaxY,
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)
+            linear-gradient(rgba(136,192,208,0.45) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(136,192,208,0.45) 1px, transparent 1px)
           `,
-          backgroundSize: "80px 80px",
-          maskImage:
-            "radial-gradient(circle at center, black 0%, transparent 75%)",
-          WebkitMaskImage:
-            "radial-gradient(circle at center, black 0%, transparent 75%)",
+          backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+        }}
+      >
+        {/* Continuous drift animation via CSS */}
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(136,192,208,0.45) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(136,192,208,0.45) 1px, transparent 1px)
+            `,
+            backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+          }}
+          animate={{
+            backgroundPosition: [
+              "0px 0px, 0px 0px",
+              `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE}px ${GRID_SIZE}px`,
+            ],
+          }}
+          transition={{
+            duration: 25,
+            ease: "linear",
+            repeat: Infinity,
+          }}
+        />
+      </motion.div>
+
+      {/* Radial vignette mask over the grid */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% 50%, transparent 0%, #2E3440 80%)",
         }}
       />
 

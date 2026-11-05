@@ -7,11 +7,13 @@ import {
     easeInOut,
     motion,
     useMotionValueEvent,
+    useReducedMotion,
     useScroll,
     useSpring,
     useTransform,
     type MotionValue,
 } from "framer-motion";
+import Snap from "lenis/snap";
 import { BriefcaseBusiness, CalendarDays, ChevronDown, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -32,25 +34,26 @@ function getCardConfig(index: number, total: number) {
     }
 
     // High-precision tuned preset for 4 experiences (pure scroll translation)
+    // Symmetrically aligned with Lenis snap targets at [0.0, 0.333, 0.667, 1.0]
     if (total === 4) {
         const presets = [
             {
-                input: [0, 0.18, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
+                input: [0, 0.10, 0.23, 0.43, 0.57, 0.77, 0.90, 1.0],
                 y: [0, 0, -14, -14, -26, -26, -36, -36],
                 zIndex: 10,
             },
             {
-                input: [0, 0.12, 0.28, 0.44, 0.54, 0.69, 0.79, 1.0],
+                input: [0, 0.10, 0.23, 0.43, 0.57, 0.77, 0.90, 1.0],
                 y: [1000, 1000, 0, 0, -14, -14, -26, -26],
                 zIndex: 20,
             },
             {
-                input: [0, 0.38, 0.54, 0.69, 0.79, 1.0],
+                input: [0, 0.43, 0.57, 0.77, 0.90, 1.0],
                 y: [1000, 1000, 0, 0, -14, -14],
                 zIndex: 30,
             },
             {
-                input: [0, 0.64, 0.80, 1.0],
+                input: [0, 0.77, 0.90, 1.0],
                 y: [1000, 1000, 0, 0],
                 zIndex: 40,
             },
@@ -59,12 +62,16 @@ function getCardConfig(index: number, total: number) {
     }
 
     // Dynamic keypoints generation for arbitrary N (pure translation)
+    const maxIdx = Math.max(1, total - 1);
+    const step = 1 / maxIdx;
+    const transitionHalf = step * 0.22;
+
     const input: number[] = [0];
     const y: number[] = [];
 
     if (index > 0) {
-        const startEnter = Math.max(0, (index - 0.7) / total);
-        const fullyEntered = index / total;
+        const startEnter = Math.max(0, (index - 0.5) * step - transitionHalf);
+        const fullyEntered = (index - 0.5) * step + transitionHalf;
 
         input.push(startEnter);
         y.push(1000);
@@ -75,16 +82,16 @@ function getCardConfig(index: number, total: number) {
         y.push(0);
     }
 
-    const activeUntil = (index + 0.7) / total;
+    const activeUntil = (index + 0.5) * step - transitionHalf;
     if (activeUntil < 1.0 && index < total - 1) {
         input.push(activeUntil);
         y.push(0);
     }
 
     for (let j = index + 1; j < total; j++) {
-        const coveredAt = (j + 0.15) / total;
+        const coveredAt = (j - 0.5) * step + transitionHalf;
         const depth = j - index;
-        const targetY = -Math.min(36, depth * 14);
+        const targetY = -Math.min(36, depth * 12);
 
         input.push(Math.min(1.0, coveredAt));
         y.push(targetY);
@@ -124,7 +131,7 @@ function StackCard({
                 y,
                 zIndex: config.zIndex,
             }}
-            className="absolute inset-0 flex w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-white/80 bg-[#ECEFF4] p-6 sm:p-7 lg:p-8 xl:p-9 shadow-[0_22px_55px_rgba(0,0,0,0.38),0_4px_12px_rgba(0,0,0,0.15),0_-4px_16px_rgba(0,0,0,0.1)]"
+            className="absolute inset-0 flex w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-white/80 bg-[#ECEFF4] p-6 sm:p-7 lg:p-8"
         >
             <div className="relative z-10 flex h-full flex-col justify-between gap-5 sm:gap-6">
                 {/* Header: Company Badge, Role, Period */}
@@ -214,12 +221,30 @@ function StackCard({
 }
 
 /* =====================================================
+   EXPERIENCE SNAP TIMING & SPEED CONFIGURATION
+   Kontrol kecepatan, kurva easing, dan durasi pergerakan snap
+====================================================== */
+const EXPERIENCE_SNAP_CONFIG = {
+    // Durasi pergerakan snap dalam detik (naikkan untuk gerakan lebih lambat & santai)
+    duration: 1.35,
+    // Easing curve: Quartic ease-out menghasilkan glide halus tanpa sentakan awal yang agresif
+    easing: (t: number) => 1 - Math.pow(1 - t, 4),
+    // Waktu tunggu (ms) setelah user berhenti scrolling sebelum snap bekerja
+    debounce: 110,
+    // Jarak jangkauan proximity snap
+    distanceThreshold: "40%" as const,
+};
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/* =====================================================
    MAIN EXPERIENCES COMPONENT
    Connected dynamically to Turso Cloud Database
 ====================================================== */
 export default function Experiences() {
     const { experiences } = useExperiences();
     const lenis = useLenis();
+    const reduce = useReducedMotion() ?? false;
     const trackRef = useRef<HTMLDivElement>(null);
     const isClickScrollingRef = useRef(false);
 
@@ -245,24 +270,51 @@ export default function Experiences() {
 
     // Spring interpolation to smooth out scroll ticks and create fluid organic motion
     const smoothProgress = useSpring(scrollYProgress, {
-        damping: 24,
-        stiffness: 160,
-        mass: 0.35,
+        damping: 28,
+        stiffness: 90,
+        mass: 0.45,
     });
 
-    // Update active experience smoothly on scroll
+    // Update active experience smoothly on scroll (aligned with snap stage thresholds)
     useMotionValueEvent(scrollYProgress, "change", (latest) => {
         if (isClickScrollingRef.current || experiences.length === 0) return;
 
         // Map [0, 1] across the N experiences from Turso
-        const rawIndex = Math.floor(latest * experiences.length);
-        const index = Math.min(experiences.length - 1, Math.max(0, rawIndex));
+        const index = Math.min(
+            experiences.length - 1,
+            Math.max(0, Math.round(latest * (experiences.length - 1)))
+        );
         const currentTargetId = experiences[index]?.id;
 
         if (currentTargetId && currentTargetId !== activeId) {
             setActiveId(currentTargetId);
         }
     });
+
+    // Smooth scroll snap using lenis/snap with controlled gentle timing
+    useEffect(() => {
+        if (!lenis || reduce || experiences.length <= 1) return;
+
+        const snap = new Snap(lenis, {
+            type: "proximity",
+            distanceThreshold: EXPERIENCE_SNAP_CONFIG.distanceThreshold,
+            duration: EXPERIENCE_SNAP_CONFIG.duration,
+            easing: EXPERIENCE_SNAP_CONFIG.easing,
+            debounce: EXPERIENCE_SNAP_CONFIG.debounce,
+        });
+
+        const section = trackRef.current;
+        if (section) {
+            const snapPoints = section.querySelectorAll<HTMLElement>("[data-experience-snap]");
+            if (snapPoints.length > 0) {
+                snap.addElements(Array.from(snapPoints), { align: "start" });
+            }
+        }
+
+        return () => {
+            snap.destroy();
+        };
+    }, [lenis, reduce, experiences]);
 
     // Cancel programmatic scroll lock if user intervenes with manual wheel/touch
     useEffect(() => {
@@ -291,16 +343,14 @@ export default function Experiences() {
         const trackTop = window.scrollY + rect.top;
         const totalScrollable = trackEl.offsetHeight - window.innerHeight;
 
-        // Target the center of that experience's scroll segment
-        const targetProgress = (targetIndex + 0.5) / experiences.length;
+        // Target the exact snap position for this experience
+        const targetProgress = targetIndex / Math.max(1, experiences.length - 1);
         const targetScrollY = trackTop + totalScrollable * targetProgress;
 
         if (lenis) {
             lenis.scrollTo(targetScrollY, {
-                duration: 0.95,
-                // Cubic ease-in-out curve
-                easing: (t) =>
-                    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+                duration: EXPERIENCE_SNAP_CONFIG.duration,
+                easing: EXPERIENCE_SNAP_CONFIG.easing,
                 onComplete: () => {
                     setTimeout(() => {
                         isClickScrollingRef.current = false;
@@ -331,12 +381,16 @@ export default function Experiences() {
         }
     };
 
-    const trackHeight = `${Math.max(2, experiences.length) * 100}vh`;
+    // Compact track height so user doesn't need to scroll excessively to shift between cards
+    const trackHeight =
+        experiences.length <= 1
+            ? "100vh"
+            : `${(experiences.length - 1) * 70 + 100}vh`;
 
     return (
         <section
             id="experiences"
-            className="relative overflow-x-clip bg-[#2E3440] text-white"
+            className="relative overflow-x-clip bg-[#2E3440] text-white snap-y snap-proximity"
         >
             {/* =====================================================
                 SCROLL TRACK (Multi-stage scroll canvas)
@@ -347,12 +401,42 @@ export default function Experiences() {
                 style={{ height: trackHeight }}
                 className="relative z-10"
             >
+                {/* Snap step targets for Lenis Snap & CSS scroll-snap */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[100vh]">
+                    {experiences.map((exp, index) => (
+                        <div
+                            key={`snap-${exp.id}`}
+                            data-experience-snap
+                            style={{
+                                top: `${(index / Math.max(1, experiences.length - 1)) * 100}%`,
+                            }}
+                            className="absolute inset-x-0 h-px snap-start snap-always"
+                        />
+                    ))}
+                </div>
                 {/* =====================================================
                     STICKY STAGE (Locked in viewport during exploration)
                 ====================================================== */}
-                <div className="sticky top-0 flex h-screen min-h-dvh w-full flex-col justify-center overflow-hidden py-8 lg:py-12">
-                    <div className="relative z-10 w-full px-2 md:px-25">
-                        <div className="mx-auto w-full max-w-[1600px] px-6 md:px-8 lg:px-12">
+                <div className="sticky top-0 flex h-screen min-h-dvh w-full flex-col justify-center overflow-hidden px-16">
+                    <div className="relative z-10 w-full">
+                        <div className="mx-auto w-full max-w-[1600px] ">
+                            {/* =====================================================
+                                SECTION MINI HEADER (Consistent with Projects & Tools)
+                            ====================================================== */}
+                            <div className="flex w-full items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <span className="h-px w-8 bg-white/30" />
+
+                                    <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
+                                        Experiences
+                                    </span>
+                                </div>
+
+                                <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
+                                    ({pad(experiences.length)}) Selected
+                                </span>
+                            </div>
+
                             {/* =====================================================
                                 MOBILE / TABLET EXPERIENCE TABS (< lg)
                             ====================================================== */}
@@ -370,7 +454,7 @@ export default function Experiences() {
                                             aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
                                             onClick={() => scrollToExperience(index)}
                                             onKeyDown={(e) => handleKeyDown(e, index)}
-                                            className={`shrink-0 flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
+                                            className={`shrink-0 flex items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
                                                 active
                                                     ? "border-[#88C0D0]/40 bg-[#88C0D0]/10 text-white"
                                                     : "border-white/10 bg-white/2 text-white/40 hover:text-white/70"

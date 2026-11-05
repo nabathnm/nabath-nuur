@@ -1,5 +1,6 @@
 "use client";
 
+import Glass from "@/components/ui/glass";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Copy, RefreshCw, Sparkles, Terminal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -162,13 +163,17 @@ export default function TerminalModal({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-2xl border border-white/15 bg-[#242933]/92 backdrop-blur-xl font-mono text-xs sm:text-sm text-[#D8DEE9] select-none ${className}`}
+      className={`relative w-full overflow-hidden rounded-2xl border border-white/[0.12] bg-[#242933]/65 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_40px_rgba(136,192,208,0.06)] font-mono text-xs sm:text-sm text-[#D8DEE9] select-none ${className}`}
     >
-      {/* Ambient top terminal glow */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 h-32 w-64 -translate-x-1/2 rounded-full bg-[#88C0D0]/10 blur-3xl" />
+      {/* Specular glass bevel & highlight border layer */}
+      <Glass rounded="rounded-2xl" />
 
-      {/* Terminal Window Header Bar */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/10 bg-[#2E3440] px-4 py-3 select-none">
+      {/* Ambient top & bottom terminal glows */}
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-36 w-72 -translate-x-1/2 rounded-full bg-[#88C0D0]/12 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -right-20 h-44 w-44 rounded-full bg-[#81A1C1]/10 blur-3xl" />
+
+      {/* Terminal Window Header Bar (Frosted translucent) */}
+      <div className="relative z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#2E3440]/60 backdrop-blur-md px-4 py-3 select-none">
         {/* Traffic light window controls */}
         <div className="flex items-center gap-2">
           <button
@@ -226,11 +231,10 @@ export default function TerminalModal({
           {/* Shell prompt execution line */}
           <div className="flex items-center gap-2 text-[#88C0D0] text-xs sm:text-[13px] font-mono min-h-[24px]">
             <span className="text-[#A3BE8C] font-bold select-none">➜</span>
-            <span className="text-[#81A1C1] font-semibold select-none">~</span>
             <span className="text-white/90 break-all">
               {displayedCommand}
               <span
-                className={`inline-block w-2 h-3.5 sm:h-4 bg-[#88C0D0] ml-1 align-middle ${
+                className={`inline-block h-3.5 w-1 ml-0.5 bg-[#88C0D0] align-middle ${
                   terminalStatus === "idle" ? "animate-pulse" : "opacity-100"
                 }`}
               />
@@ -250,7 +254,7 @@ export default function TerminalModal({
                   className="space-y-3.5"
                 >
                   {activeInfo.fields && activeInfo.fields.length > 0 && (
-                    <div className="rounded-xl border border-white/[0.08] bg-[#1E222A]/60 p-3.5 sm:p-4 space-y-2.5 shadow-inner">
+                    <div className="rounded-xl border border-white/[0.08] bg-[#1E222A]/50 backdrop-blur-md p-3.5 sm:p-4 space-y-2.5 shadow-inner shadow-black/20">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4 text-[#88C0D0]" />
@@ -301,9 +305,9 @@ export default function TerminalModal({
         </div>
 
         {/* Terminal Footer with status & blinking prompt */}
-        <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/[0.06] text-[11px] text-white/40 select-none">
+        <div className="flex items-center justify-between border-t border-white/[0.06] text-white/40 select-none">
           <div className="flex items-center gap-1.5">
-            <span className="text-[#A3BE8C]">➜</span>
+            <span className="text-[#A3BE8C] font-bold select-none">➜</span>
             <span className="text-[#81A1C1]">status:</span>
             <span
               className={
@@ -324,15 +328,6 @@ export default function TerminalModal({
                 ? "STANDBY_ONLINE"
                 : "INSPECTING"}
             </span>
-            <span
-              className={`inline-block h-3.5 w-1.5 ml-0.5 ${
-                terminalStatus === "idle"
-                  ? "bg-[#88C0D0] animate-pulse"
-                  : terminalStatus === "deleting"
-                  ? "bg-[#BF616A]"
-                  : "bg-[#EBCB8B]"
-              }`}
-            />
           </div>
 
           <span className="text-[10px] text-white/30 font-mono">

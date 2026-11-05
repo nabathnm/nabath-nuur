@@ -88,6 +88,8 @@ const services: ServiceItem[] = [
   },
 ];
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
 export default function Services() {
   const trackRef = useRef<HTMLDivElement>(null);
   const panelsContainerRef = useRef<HTMLDivElement>(null);
@@ -204,15 +206,33 @@ export default function Services() {
             <div className="absolute right-[8%] bottom-[30%] h-1 w-1 rounded-full bg-white/25" />
           </div>
 
-          <div className="relative z-10 mx-auto flex h-full w-full max-w-[1700px] flex-col justify-between px-6 sm:px-10 lg:px-16">
-           
-           
-                  <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl leading-[1.08]">
-                    What I can do{" "}
-                    <span className="font-normal text-white/35">
-                      for your next project.
-                    </span>
-                  </h2>
+          <div className="relative z-10 mx-auto flex h-full w-full max-w-[1600px] flex-col justify-between px-6 md:px-8 lg:px-16">
+            {/* Top section: Mini header + Headline */}
+            <div>
+              {/* =====================================================
+                  SECTION MINI HEADER (Consistent with Projects & Tools)
+              ====================================================== */}
+              <div className="mb-4 sm:mb-6 flex w-full items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="h-px w-8 bg-white/30" />
+
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
+                    Services
+                  </span>
+                </div>
+
+                <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
+                  ({pad(services.length)}) Selected
+                </span>
+              </div>
+
+              <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl leading-[1.08]">
+                What I can do{" "}
+                <span className="font-normal text-white/35">
+                  for your next project.
+                </span>
+              </h2>
+            </div>
  
 
             {/* =====================================================
