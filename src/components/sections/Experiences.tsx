@@ -417,26 +417,31 @@ export default function Experiences() {
                 {/* =====================================================
                     STICKY STAGE (Locked in viewport during exploration)
                 ====================================================== */}
-                <div className="sticky top-0 flex h-screen min-h-dvh w-full flex-col justify-center overflow-hidden px-16">
-                    <div className="relative z-10 w-full">
-                        <div className="mx-auto w-full max-w-[1600px] ">
-                            {/* =====================================================
-                                SECTION MINI HEADER (Consistent with Projects & Tools)
-                            ====================================================== */}
-                            <div className="flex w-full items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <span className="h-px w-8 bg-white/30" />
+                <div className="relative sticky top-0 flex h-screen min-h-dvh w-full flex-col justify-center overflow-hidden">
+                    {/* =====================================================
+                        SECTION MINI HEADER (Consistent with Projects & Tools)
+                    ====================================================== */}
+                    <div className="pointer-events-none absolute top-10 inset-x-0 z-20">
+                        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
+                            <div className="flex items-center gap-3">
+                                <span className="h-px w-8 bg-white/30" />
 
-                                    <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
-                                        Experiences
-                                    </span>
-                                </div>
-
-                                <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
-                                    ({pad(experiences.length)}) Selected
+                                <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
+                                    Experiences
                                 </span>
                             </div>
 
+                            <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
+                                ({pad(experiences.length)}) Selected
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="relative z-10 text-6xl font-bold pt-4 mx-auto mb-6 w-full max-w-[1600px] px-6 md:px-8 lg:px-16 text-white/50">
+                        My Journey Through the Tech Landscape.
+                    </div>
+                    <div className="relative z-10 w-full px-6 md:px-8 lg:px-16 pt-12 sm:pt-8 lg:pt-0">
+                        <div className="mx-auto w-full max-w-[1600px]">
                             {/* =====================================================
                                 MOBILE / TABLET EXPERIENCE TABS (< lg)
                             ====================================================== */}
@@ -477,12 +482,12 @@ export default function Experiences() {
                             <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-12 lg:gap-8 xl:gap-12 2xl:gap-16 items-center">
                                 {/* =================================================
                                     LEFT COLUMN — EXPERIENCE LIST (DESKTOP)
-                                    Fully preserved as edited by user
+                                    Fully preserved as edited by user with horizontal grid lines
                                 ================================================== */}
                                 <div
                                     role="tablist"
                                     aria-label="Experiences list"
-                                    className="hidden lg:flex lg:col-span-5 flex-col justify-center space-y-4 sm:space-y-6 lg:space-y-8"
+                                    className="hidden lg:flex lg:col-span-5 flex-col justify-center divide-y divide-white/10 border-y border-white/10"
                                 >
                                     {experiences.map((experience, index) => {
                                         const active = experience.id === activeId;
@@ -497,7 +502,7 @@ export default function Experiences() {
                                                 tabIndex={active ? 0 : -1}
                                                 onClick={() => scrollToExperience(index)}
                                                 onKeyDown={(e) => handleKeyDown(e, index)}
-                                                className="group relative flex items-center text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-[#2E3440] rounded-xl"
+                                                className="group relative flex w-full items-center text-left py-3.5 sm:py-4 lg:py-5 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-[#2E3440]"
                                             >
                                                 <div className="relative flex items-center gap-3 lg:gap-4">
                                                     {/* Cat Head Pointer Active Indicator */}
@@ -522,7 +527,7 @@ export default function Experiences() {
                                                             className={`whitespace-nowrap text-xl sm:text-2xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-bold transition-all duration-300 ease-in-out leading-tight ${
                                                                 active
                                                                     ? "text-white translate-x-2"
-                                                                    : "text-white/25 hover:text-white/60 -translate-x-14"
+                                                                    : "text-white/25 group-hover:text-white/60 -translate-x-14"
                                                             }`}
                                                         >
                                                             {experience.company}

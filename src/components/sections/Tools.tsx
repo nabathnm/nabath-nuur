@@ -1,5 +1,6 @@
 "use client";
 
+import { TextRoll } from "@/components/ui/text-roll";
 import { useTools } from "@/hooks/useTools";
 import type { Tool } from "@/models/tool";
 import { Cpu } from "lucide-react";
@@ -119,61 +120,100 @@ interface MarqueeRowProps {
   rowIndex: number;
 }
 
-function MarqueeRow({
-  tools,
-  direction = "left",
-  duration = "40s",
-  rowIndex,
-}: MarqueeRowProps) {
+function MarqueeRow({ tools, direction = "left", duration = "40s", rowIndex }: MarqueeRowProps) {
   if (!tools.length) return null;
 
-  // Build the sequence with intermittent separators
-  const sequence: Array<{ kind: "tool"; tool: Tool; index: number } | { kind: "separator"; sep: Separator }> = [];
-  tools.forEach((tool, i) => {
-    sequence.push({ kind: "tool", tool, index: i });
-    const sep = SEPARATORS[(i + rowIndex * 2) % SEPARATORS.length];
-    sequence.push({ kind: "separator", sep });
-  });
+  const sequence = tools.flatMap((tool, i) => [
+    { kind: "tool" as const, tool, index: i },
+    { kind: "separator" as const, sep: SEPARATORS[(i + rowIndex * 2) % SEPARATORS.length] },
+  ]);
+  const fullRow = sequence.length < 12 ? [...sequence, ...sequence, ...sequence] : sequence;
 
-  // Ensure enough items to span wide displays seamlessly (repeat sequence if needed)
-  const fullRow = sequence.length < 12
-    ? [...sequence, ...sequence, ...sequence]
-    : sequence;
+  const animClass = direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
 
-  const animClass =
-    direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
+  const renderSet = (prefix: string, hidden = false) => (
+    <div
+      aria-hidden={hidden || undefined}
+      className="flex shrink-0 items-center gap-6 pr-6 sm:gap-8 sm:pr-8 lg:gap-12 lg:pr-12"
+    >
+      {fullRow.map((item, idx) =>
+        item.kind === "tool" ? (
+          <ToolItem key={`${prefix}-${idx}`} tool={item.tool} index={item.index} />
+        ) : (
+          <SeparatorWidget key={`${prefix}-${idx}`} separator={item.sep} />
+        )
+      )}
+    </div>
+  );
 
   return (
-    <div className="group relative flex w-full overflow-hidden py-3 sm:py-4 pause-on-hover">
+    <div className="pause-on-hover relative flex w-full overflow-hidden py-3 sm:py-4">
       <div
-        className={`${animClass} flex shrink-0 items-center gap-6 sm:gap-8 lg:gap-12`}
+        className={`${animClass} flex w-max shrink-0 will-change-transform`}
         style={{ "--marquee-duration": duration } as React.CSSProperties}
       >
-        {/* Set A */}
-        {fullRow.map((item, idx) => (
-          <React.Fragment key={`a-${idx}`}>
-            {item.kind === "tool" ? (
-              <ToolItem tool={item.tool} index={item.index} />
-            ) : (
-              <SeparatorWidget separator={item.sep} />
-            )}
-          </React.Fragment>
-        ))}
-
-        {/* Set B (Infinite duplicate) */}
-        {fullRow.map((item, idx) => (
-          <React.Fragment key={`b-${idx}`}>
-            {item.kind === "tool" ? (
-              <ToolItem tool={item.tool} index={item.index} />
-            ) : (
-              <SeparatorWidget separator={item.sep} />
-            )}
-          </React.Fragment>
-        ))}
+        {renderSet("a")}
+        {renderSet("b", true)}
       </div>
     </div>
   );
 }
+
+// function MarqueeRow({
+//   tools,
+//   direction = "left",
+//   duration = "40s",
+//   rowIndex,
+// }: MarqueeRowProps) {
+//   if (!tools.length) return null;
+
+//   // Build the sequence with intermittent separators
+//   const sequence: Array<{ kind: "tool"; tool: Tool; index: number } | { kind: "separator"; sep: Separator }> = [];
+//   tools.forEach((tool, i) => {
+//     sequence.push({ kind: "tool", tool, index: i });
+//     const sep = SEPARATORS[(i + rowIndex * 2) % SEPARATORS.length];
+//     sequence.push({ kind: "separator", sep });
+//   });
+
+//   // Ensure enough items to span wide displays seamlessly (repeat sequence if needed)
+//   const fullRow = sequence.length < 12
+//     ? [...sequence, ...sequence, ...sequence]
+//     : sequence;
+
+//   const animClass =
+//     direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
+
+//   return (
+//     <div className="group relative flex w-full overflow-hidden py-3 sm:py-4 pause-on-hover">
+//       <div
+//         className={`${animClass} flex shrink-0 items-center gap-6 sm:gap-8 lg:gap-12`}
+//         style={{ "--marquee-duration": duration } as React.CSSProperties}
+//       >
+//         {/* Set A */}
+//         {fullRow.map((item, idx) => (
+//           <React.Fragment key={`a-${idx}`}>
+//             {item.kind === "tool" ? (
+//               <ToolItem tool={item.tool} index={item.index} />
+//             ) : (
+//               <SeparatorWidget separator={item.sep} />
+//             )}
+//           </React.Fragment>
+//         ))}
+
+//         {/* Set B (Infinite duplicate) */}
+//         {fullRow.map((item, idx) => (
+//           <React.Fragment key={`b-${idx}`}>
+//             {item.kind === "tool" ? (
+//               <ToolItem tool={item.tool} index={item.index} />
+//             ) : (
+//               <SeparatorWidget separator={item.sep} />
+//             )}
+//           </React.Fragment>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
 
 /* =====================================================
    MAIN REDESIGNED TOOLS SECTION
@@ -222,6 +262,15 @@ export default function Tools() {
           ({pad(tools.length)}) Selected
         </span>
       </div>
+      <div className="relative z-10 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold pt-4 mx-auto mb-6 w-full max-w-[1600px] px-6 md:px-8 lg:px-16 text-white leading-[1.12]">
+        <div className="flex">
+          <TextRoll>
+            My go-to stack for turning ideas into shipped products.
+          </TextRoll>
+          <div>
+          </div>
+        </div>
+      </div>
 
       {/* =====================================================
           INFINITE HORIZONTAL MARQUEE STAGE (Multi-Row)
@@ -269,6 +318,27 @@ export default function Tools() {
               direction="left"
               duration="40s"
               rowIndex={2}
+            />
+
+            <MarqueeRow
+              tools={row3}
+              direction="right"
+              duration="40s"
+              rowIndex={3}
+            />
+
+            <MarqueeRow
+              tools={row3}
+              direction="left"
+              duration="32s"
+              rowIndex={4}
+            />
+
+            <MarqueeRow
+              tools={row3}
+              direction="right"
+              duration="40s"
+              rowIndex={5}
             />
           </>
         )}

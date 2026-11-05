@@ -135,20 +135,20 @@ export default function About() {
     // tetap bekerja sekaligus mencegah horizontal overflow.
     <section
       id="about"
-      className="relative overflow-x-clip bg-transparent py-24 text-white"
+      className="relative overflow-x-clip bg-transparent text-white"
     >
       {/* =====================================================
           SCROLL TRACK (sticky stage + scroll-driven card)
       ====================================================== */}
 
       <div ref={trackRef} className="relative z-10 h-[200vh]">
-        <div className="sticky -top-20 flex h-dvh w-full items-center justify-center overflow-hidden">
+        <div className="relative sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
           {/* =====================================================
               SECTION MINI HEADER (Consistent with Projects & Tools)
           ====================================================== */}
           <motion.div
             style={{ opacity: bgMarqueeOpacity }}
-            className="pointer-events-none absolute top-8 inset-x-0 z-20"
+            className="pointer-events-none absolute top-10 inset-x-0 z-20"
           >
             <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
               <div className="flex items-center gap-3">

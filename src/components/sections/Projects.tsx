@@ -44,6 +44,21 @@ const IMAGE_REVEAL_OFFSET = "10%"
 const pad = (n: number) => String(n).padStart(2, "0")
 
 /* =====================================================
+   PROJECT SNAP CONFIGURATION
+   Tuned for smooth, natural glide snap aligning cleanly with the navbar
+====================================================== */
+const PROJECT_SNAP_CONFIG = {
+  // Durasi animasi snap dalam detik (glide halus dan santai)
+  duration: 1.25,
+  // Easing quartic ease-out: deselerasi mulus tanpa hentakan mendadak
+  easing: (t: number) => 1 - Math.pow(1 - t, 4),
+  // Waktu tunggu debounce (ms) setelah scroll berhenti sebelum snap aktif
+  debounce: 110,
+  // Threshold jarak proximity snap agar snap responsif dan tidak mudah macet
+  distanceThreshold: "40%" as const,
+}
+
+/* =====================================================
    MARQUEE HEADER
 ====================================================== */
 
@@ -292,10 +307,16 @@ function ProjectPanel({
     <article
       ref={ref}
       aria-label={project.title ?? `Project ${index + 1}`}
-      className="relative snap-start snap-always scroll-mt-20 md:scroll-mt-24 lg:scroll-mt-28"
+      className="relative snap-start scroll-mt-20 md:scroll-mt-24 lg:scroll-mt-24"
     >
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-center px-6 py-14 md:px-8 md:py-20 lg:px-12 lg:py-24">
-        <div className="relative flex flex-col gap-6 lg:block lg:min-h-[78dvh]">
+      {/* Anchor point for Lenis Snap: offset to ensure project lands cleanly below floating navbar */}
+      <div
+        data-project-snap
+        className="pointer-events-none absolute -top-16 md:-top-20 lg:-top-20 inset-x-0 h-px"
+      />
+
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-center px-6 py-6 md:px-8 md:py-8 lg:px-12 lg:py-10">
+        <div className="relative flex flex-col gap-6 lg:block lg:min-h-[72dvh]">
           {/* Outlined index */}
 
           <motion.span
@@ -439,7 +460,7 @@ function ProjectList({
   reduce: boolean
 }) {
   return (
-    <div className="relative z-10 px-2 md:px-16 snap-y snap-proximity">
+    <div className="relative z-10 px-2 md:px-16">
       {projects.map((project, index) => (
         <ProjectPanel
           key={project.id}
@@ -468,17 +489,17 @@ export default function Projects() {
 
     const snap = new Snap(lenis, {
       type: "proximity",
-      distanceThreshold: "28%",
-      duration: 1,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      debounce: 100,
+      distanceThreshold: PROJECT_SNAP_CONFIG.distanceThreshold,
+      duration: PROJECT_SNAP_CONFIG.duration,
+      easing: PROJECT_SNAP_CONFIG.easing,
+      debounce: PROJECT_SNAP_CONFIG.debounce,
     })
 
     const section = document.getElementById("projects")
     if (section) {
-      const articles = section.querySelectorAll<HTMLElement>("article")
-      if (articles.length > 0) {
-        snap.addElements(Array.from(articles), { align: "start" })
+      const snapPoints = section.querySelectorAll<HTMLElement>("[data-project-snap]")
+      if (snapPoints.length > 0) {
+        snap.addElements(Array.from(snapPoints), { align: "start" })
       }
     }
 

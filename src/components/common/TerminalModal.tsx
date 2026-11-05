@@ -168,10 +168,6 @@ export default function TerminalModal({
       {/* Specular glass bevel & highlight border layer */}
       <Glass rounded="rounded-2xl" />
 
-      {/* Ambient top & bottom terminal glows */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 h-36 w-72 -translate-x-1/2 rounded-full bg-[#88C0D0]/12 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -right-20 h-44 w-44 rounded-full bg-[#81A1C1]/10 blur-3xl" />
-
       {/* Terminal Window Header Bar (Frosted translucent) */}
       <div className="relative z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#2E3440]/60 backdrop-blur-md px-4 py-3 select-none">
         {/* Traffic light window controls */}
