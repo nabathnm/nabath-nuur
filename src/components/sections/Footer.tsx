@@ -27,20 +27,14 @@ export default function Footer() {
       {/* Ambient glow */}
       <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-white/5 blur-3xl" />
 
-      <div className="relative mx-auto max-w-7xl px-8 py-16">
+      <div className="relative mx-auto w-full max-w-[1600px] px-6 py-6 md:px-8 md:py-8 lg:px-12 lg:py-10">
         {/* Main Footer */}
         <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-2">
           {/* Identity */}
           <div>
-            <p className="mb-3 text-sm text-white/50">Let's build something</p>
-
-            <h2 className="text-4xl font-semibold tracking-tight md:text-5xl">
-              Together.
-            </h2>
-
-            <p className="mt-5 max-w-md text-sm leading-relaxed text-white/60">
-              I'm an Information Technology student interested in building web
-              and mobile applications with modern technologies.
+            <p className="mb-3 text-white text-2xl font-bold">I'm Nabath Nuur</p>
+            <p className="mt-5 max-w-md text-4xl font-bold text-white/60">
+             Let's create something amazing together.
             </p>
           </div>
 
@@ -48,16 +42,7 @@ export default function Footer() {
           <div className="md:justify-self-end">
             <p className="mb-4 text-sm text-white/50">Get in touch</p>
 
-            <a
-              href="mailto:your@email.com"
-              className="group inline-flex items-center gap-2 text-lg font-medium transition hover:text-white/70"
-            >
-              your@email.com
-              <ArrowUpRight
-                size={18}
-                className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
-              />
-            </a>
+            
 
             {/* Social Links */}
             <div className="mt-6 flex gap-3">
@@ -82,14 +67,19 @@ export default function Footer() {
                 )
               })}
             </div>
+            <a
+              href="mailto:muhammadnabathnuur@email.com"
+              className="group inline-flex items-center gap-2 text-lg font-medium transition hover:text-white/70 pt-4"
+            >
+              muhammadnabathnuur@email.com
+            </a>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="my-10 h-px bg-white/10" />
 
         {/* Bottom */}
-        <div className="flex flex-col justify-between gap-4 text-xs text-white/40 md:flex-row">
+        <div className="flex flex-col justify-between gap-4 text-xs text-black md:flex-row bg-white pt-20">
           <p>© {new Date().getFullYear()} Nabath Nuur. All rights reserved.</p>
 
           <p>Designed & built with React + TypeScript</p>

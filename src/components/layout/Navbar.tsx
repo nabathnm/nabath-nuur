@@ -6,7 +6,7 @@ import Glass from "@/components/ui/glass"
 
 const navItems = [
   { name: "About", href: "#about" },
-  { name: "Services", href: "#services" },
+  // { name: "Services", href: "#services" },
   { name: "Tools", href: "#tools" },
   { name: "Projects", href: "#projects" },
   { name: "Experiences", href: "#experiences" },

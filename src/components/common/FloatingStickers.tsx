@@ -67,10 +67,10 @@ export const STICKER_DATA: Record<string, StickerInfo> = {
     description:
       "Comprehensive profile highlighting software engineering background, mobile & frontend development expertise, academic milestones, and project track record.",
     fields: [
-      { label: "Full Name", value: "Muhammad Nabath Nuur Maulana" },
-      { label: "Role", value: "Mobile & Frontend Engineer" },
+      { label: "Full Name", value: "Nabath Nuur Muhammad" },
+      { label: "Role", value: "Software Engineer" },
       { label: "Key Stack", value: "Flutter, React, TypeScript, Next.js, Tailwind CSS" },
-      { label: "Education", value: "Universitas Brawijaya (Informatics)" },
+      { label: "Education", value: "Computer Science" },
       { label: "Status", value: "Open for Software Engineering opportunities" },
     ],
   },

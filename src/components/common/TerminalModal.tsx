@@ -250,7 +250,7 @@ export default function TerminalModal({
                   className="space-y-3.5"
                 >
                   {activeInfo.fields && activeInfo.fields.length > 0 && (
-                    <div className="rounded-xl border border-white/[0.08] bg-[#1E222A]/50 backdrop-blur-md p-3.5 sm:p-4 space-y-2.5 shadow-inner shadow-black/20">
+                    <div className=" border border-white/[0.08] bg-[#1E222A]/50 backdrop-blur-md p-3.5 sm:p-4 space-y-2.5 shadow-inner shadow-black/20">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4 text-[#88C0D0]" />
@@ -301,10 +301,10 @@ export default function TerminalModal({
         </div>
 
         {/* Terminal Footer with status & blinking prompt */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] text-white/40 select-none">
+        <div className="flex justify-between gap-2 text-[#88C0D0] text-xs sm:text-[13px] font-mono min-h-[24px]">
           <div className="flex items-center gap-1.5">
             <span className="text-[#A3BE8C] font-bold select-none">➜</span>
-            <span className="text-[#81A1C1]">status:</span>
+            <span className="text-[#81A1C1] break-all">status:</span>
             <span
               className={
                 terminalStatus === "deleting"
@@ -326,7 +326,7 @@ export default function TerminalModal({
             </span>
           </div>
 
-          <span className="text-[10px] text-white/30 font-mono">
+          <span className="">
             {terminalStatus === "deleting"
               ? "backspacing command..."
               : terminalStatus === "typing"

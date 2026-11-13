@@ -7,12 +7,20 @@ function mapRowToExperience(row: any): Experience {
   let parsedTasks: string[] = [];
 
   try {
-    parsedTasks =
-      typeof raw.tasks === 'string'
-        ? JSON.parse(raw.tasks || '[]')
-        : Array.isArray(raw.tasks)
-        ? raw.tasks
-        : [];
+    if (typeof raw.tasks === 'string') {
+      const trimmed = raw.tasks.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        parsedTasks = JSON.parse(trimmed);
+      } else {
+        // Fallback: pecah per baris jika data diinput per newline
+        parsedTasks = trimmed
+          .split('\n')
+          .map((line) => line.replace(/^[-*•]\s*/, '').trim())
+          .filter(Boolean);
+      }
+    } else if (Array.isArray(raw.tasks)) {
+      parsedTasks = raw.tasks;
+    }
   } catch (e) {
     console.warn(`Failed to parse tasks for experience id ${raw.id}:`, e);
     parsedTasks = [];
@@ -22,12 +30,9 @@ function mapRowToExperience(row: any): Experience {
     id: Number(raw.id),
     role: raw.role,
     company: raw.company,
-    type: raw.type,
-    location: raw.location,
     start: raw.start,
     end: raw.end,
     description: raw.description,
-    image: raw.image_url ?? undefined,
     tasks: parsedTasks,
   };
 }
@@ -60,4 +65,3 @@ export const experienceService = {
     }
   },
 };
-

@@ -45,7 +45,7 @@ export function App() {
       <div className="relative z-10">
         <Hero />
         <About />
-        <Services />
+        {/* <Services /> */}
         <Tools />
         <Projects />
         <Experiences />

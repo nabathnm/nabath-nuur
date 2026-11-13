@@ -15,10 +15,27 @@ import {
 import { useEffect, useRef } from "react"
 import ScrollMaskCard, { ScrollReveal } from "../common/ScrollMaskCard"
 
+/* =====================================================
+   CONTENT (edit here — no need to touch the JSX)
+====================================================== */
+const PROFILE = {
+  name: "Nabath Nuur",
+  role: "IT Student",
+  year: "2026",
+  status: "Active",
+  // Public image link (Supabase Storage / external hosting)
+  image:
+    "https://dgapjusikgybitsessku.supabase.co/storage/v1/object/public/projects/nabati.JPG",
+  eyebrow: "Hello, I'm",
+  headline: "Building thoughtful things for the web.",
+  bio: "An IT student who enjoys turning ideas into clean, fast and accessible interfaces — from the first sketch to the last pixel of polish.",
+  focus: ["Frontend", "UI Motion", "Web Performance", "Databases"],
+}
+
 /**
- * Helper untuk memastikan URL gambar publik yang valid.
- * Jika pengguna memasukkan URL dashboard console Supabase, fungsi ini
- * otomatis mengubahnya menjadi public object URL yang bisa diakses tag <img>.
+ * Ensures the image URL is a valid public URL.
+ * If a Supabase dashboard console URL is pasted, it is converted into
+ * a public object URL that an <img> tag can load.
  */
 function getDirectImageUrl(url: string): string {
   if (!url) return ""
@@ -34,15 +51,17 @@ function getDirectImageUrl(url: string): string {
   return url
 }
 
-// Link foto profil publik langsung dari Supabase Storage / hosting eksternal
-const PROFILE_IMAGE =
-  "https://dgapjusikgybitsessku.supabase.co/storage/v1/object/public/projects/nabati.JPG"
+// Resolved once at module level instead of on every render
+const PROFILE_IMAGE_URL = getDirectImageUrl(PROFILE.image)
 
-// Pengaturan animasi background marquee (mengikuti gaya title Project)
-const BASE_SPEED = 70 // px/detik, kecepatan pergeseran otomatis (ke kiri)
-const VELOCITY_GAIN = 0.35 // pengaruh kecepatan scroll terhadap pergeseran marquee
-const MAX_VELOCITY = 4000 // batas atas velocity
-const MAX_SKEW = 8 // derajat kemiringan dinamis
+/* =====================================================
+   MARQUEE SETTINGS (matches the Project section title style)
+====================================================== */
+const BASE_SPEED = 70 // px/s, automatic drift (to the left)
+const VELOCITY_GAIN = 0.35 // how strongly scroll velocity affects the marquee
+const MAX_VELOCITY = 4000 // velocity clamp
+const MAX_SKEW = 8 // max dynamic skew (deg)
+const MARQUEE_COPIES = 5
 
 export default function About() {
   const trackRef = useRef<HTMLDivElement>(null)
@@ -52,18 +71,20 @@ export default function About() {
   const reduce = useReducedMotion() ?? false
   const inView = useInView(trackRef, { margin: "200px 0px" })
 
-  // Progress of the sticky scroll track (0 → 1), smoothed with a spring.
+  // Progress of the sticky track (0 → 1), smoothed with a spring
+  // (the spring is skipped when the user prefers reduced motion).
   const { scrollYProgress } = useScroll({
     target: trackRef,
     offset: ["start start", "end end"],
   })
-  const smoothProgress = useSpring(scrollYProgress, {
+  const springProgress = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
     restDelta: 0.001,
   })
+  const progress = reduce ? scrollYProgress : springProgress
 
-  // Velocity scroll untuk akselerasi marquee & dynamic skew
+  // Page scroll velocity → marquee acceleration & dynamic skew
   const { scrollY } = useScroll()
   const scrollVelocity = useVelocity(scrollY)
   const smoothVelocity = useSpring(scrollVelocity, {
@@ -71,17 +92,16 @@ export default function About() {
     stiffness: 400,
   })
 
-  // Posisi horizontal marquee (looping seamless)
+  // Horizontal marquee position (seamless loop)
   const x = useMotionValue(0)
 
-  // Skew halus mengikuti scroll velocity
   const skewX = useTransform(
     smoothVelocity,
     [-3000, 0, 3000],
     [MAX_SKEW, 0, -MAX_SKEW]
   )
 
-  // Ukur lebar satu grup untuk loop seamless
+  // Measure one marquee group for a seamless loop
   useEffect(() => {
     const element = firstGroupRef.current
     if (!element) return
@@ -93,15 +113,14 @@ export default function About() {
     update()
 
     const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      update(entry?.borderBoxSize?.[0]?.inlineSize)
+      update(entries[0]?.borderBoxSize?.[0]?.inlineSize)
     })
 
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
 
-  // Animasi pergeseran teks kontinu + responsif terhadap scroll velocity
+  // Continuous drift + scroll-velocity response (paused when off-screen)
   useAnimationFrame((_, delta) => {
     const width = groupWidthRef.current
     if (reduce || !inView || width <= 0) return
@@ -119,41 +138,34 @@ export default function About() {
     x.set(next)
   })
 
-  const indicatorOpacity = useTransform(smoothProgress, [0, 0.12], [1, 0])
-  // Marquee background terlihat jelas di posisi awal dan memudar saat card expand
-  const bgMarqueeOpacity = useTransform(smoothProgress, [0, 0.25], [1, 0])
-
-  /* =====================================================
-      SIDE CONTENT (rendered in the sticky stage on lg,
-      and as normal blocks around the track on mobile)
-  ====================================================== */
-
-
+  const indicatorOpacity = useTransform(progress, [0, 0.12], [1, 0])
+  // Marquee + mini header are clearly visible at the start and fade as the card expands
+  const introOpacity = useTransform(progress, [0, 0.25], [1, 0])
 
   return (
-    // NOTE: overflow-x-clip (bukan overflow-hidden) supaya `position: sticky`
-    // tetap bekerja sekaligus mencegah horizontal overflow.
+    // overflow-x-clip (not overflow-hidden) keeps `position: sticky` working
+    // while still preventing horizontal overflow.
     <section
       id="about"
+      aria-labelledby="about-heading"
       className="relative overflow-x-clip bg-transparent text-white"
     >
-      {/* =====================================================
-          SCROLL TRACK (sticky stage + scroll-driven card)
-      ====================================================== */}
+      {/* The marquee is decorative (aria-hidden), so expose a real heading */}
+      <h2 id="about-heading" className="sr-only">
+        About me — {PROFILE.name}
+      </h2>
 
-      <div ref={trackRef} className="relative z-10 h-[200vh]">
-        <div className="relative sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
-          {/* =====================================================
-              SECTION MINI HEADER (Consistent with Projects & Tools)
-          ====================================================== */}
+      {/* SCROLL TRACK (sticky stage + scroll-driven card) */}
+      <div ref={trackRef} className="relative z-10 h-[260vh]">
+        <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
+          {/* SECTION MINI HEADER */}
           <motion.div
-            style={{ opacity: bgMarqueeOpacity }}
-            className="pointer-events-none absolute top-10 inset-x-0 z-20"
+            style={{ opacity: introOpacity }}
+            className="pointer-events-none absolute inset-x-0 top-10 z-20"
           >
             <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
               <div className="flex items-center gap-3">
                 <span className="h-px w-8 bg-white/30" />
-
                 <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
                   About
                 </span>
@@ -165,112 +177,127 @@ export default function About() {
             </div>
           </motion.div>
 
-          {/* =====================================================
-              BACKGROUND MARQUEE (Teks besar bergeser di posisi awal)
-              Terinspirasi dari style title pada section Project
-          ====================================================== */}
+          {/* BACKGROUND MARQUEE */}
           <motion.div
-            style={{ opacity: bgMarqueeOpacity }}
-            className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden select-none"
+            style={{ opacity: introOpacity }}
+            className="pointer-events-none absolute inset-0 z-0 flex select-none items-center justify-center overflow-hidden"
             aria-hidden="true"
           >
-            {/* Wrapper: skew dinamis mengikuti kecepatan scroll */}
+            {/* Wrapper: dynamic skew follows scroll velocity */}
             <motion.div
               style={reduce ? undefined : { skewX }}
               className="will-change-transform"
             >
-              {/* Track: pergeseran horizontal kontinu (translate X) */}
+              {/* Track: continuous horizontal translate */}
               <motion.div
                 style={{ x: reduce ? 0 : x }}
                 className="flex w-max transform-gpu items-center whitespace-nowrap will-change-transform"
               >
-                {Array.from({ length: 5 }).map((_, index) => (
+                {Array.from({ length: MARQUEE_COPIES }).map((_, index) => (
                   <div
                     key={index}
                     ref={index === 0 ? firstGroupRef : undefined}
                     className="flex shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12 lg:gap-16 lg:pr-16"
                   >
-                    <span className="text-[clamp(4.5rem,15vw,13rem)] font-bold tracking-tighter text-white/[0.09] leading-none">
+                    <span className="text-[clamp(4.5rem,15vw,13rem)] font-bold leading-none tracking-tighter text-white/[0.09]">
                       About
                     </span>
 
                     <span
-                      className="text-[clamp(4.5rem,15vw,13rem)] font-bold tracking-tighter text-transparent leading-none"
-                      style={{
-                        WebkitTextStroke: "1.5px rgba(255,255,255,0.22)",
-                      }}
+                      className="text-[clamp(4.5rem,15vw,13rem)] font-bold leading-none tracking-tighter text-transparent"
+                      style={{ WebkitTextStroke: "1.5px rgba(255,255,255,0.22)" }}
                     >
                       Me
                     </span>
 
-                    <CatHeadPointer
-                      className="h-[clamp(2.5rem,7vw,6.5rem)] w-[clamp(2.5rem,7vw,6.5rem)] shrink-0 opacity-25 drop-shadow-[0_2px_12px_rgba(136,192,208,0.25)]"
-                    />
+                    <CatHeadPointer className="h-[clamp(2.5rem,7vw,6.5rem)] w-[clamp(2.5rem,7vw,6.5rem)] shrink-0 opacity-25 drop-shadow-[0_2px_12px_rgba(136,192,208,0.25)]" />
                   </div>
                 ))}
               </motion.div>
             </motion.div>
           </motion.div>
 
-          {/* =================================================
-              MAIN PROFILE CARD → scroll-driven fullscreen mask
-          ================================================== */}
-
+          {/* MAIN PROFILE CARD → scroll-driven fullscreen mask */}
           <ScrollMaskCard
-            progress={smoothProgress}
-            imageSrc={getDirectImageUrl(PROFILE_IMAGE)}
-            imageAlt="Nabath Nuur"
+            progress={progress}
+            imageSrc={PROFILE_IMAGE_URL}
+            imageAlt={PROFILE.name}
             idleContent={
               <div className="relative z-10 flex h-full flex-col justify-between p-6">
-
-                {/* Top */}
-                <div className="flex items-center justify-between">
+                {/* Top: status */}
+                <div className="flex items-center">
                   <span className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#A3BE8C]" />
-
-                    <span className="text-[9px] uppercase tracking-wider text-white/35">
-                      Active
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-[#A3BE8C] opacity-60 motion-safe:animate-ping" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#A3BE8C]" />
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider text-white/45">
+                      {PROFILE.status}
                     </span>
                   </span>
                 </div>
 
-                {/* Bottom */}
+                {/* Bottom: name + meta */}
                 <div>
-
-                  <h3 className="mt-2 text-xl font-medium text-white/85">
-                    Nabath Nuur.
+                  <h3 className="text-xl font-medium text-white/90">
+                    {PROFILE.name}.
                   </h3>
 
                   <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-2">
-                    <span className="text-[9px] uppercase tracking-[0.2em] text-white/30">
-                      IT Student
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-white/40">
+                      {PROFILE.role}
                     </span>
-
-                    <span className="text-[9px] uppercase tracking-[0.2em] text-white/30">
-                      2026
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-white/40">
+                      {PROFILE.year}
                     </span>
                   </div>
                 </div>
               </div>
             }
           >
-            {/* Fullscreen content, revealed progressively */}
-            <div className="flex flex-col items-center text-center">
+            {/* Fullscreen content, revealed progressively (staggered) */}
+            <div className="mx-auto flex max-w-3xl flex-col items-center px-6 text-center">
               <ScrollReveal
-                progress={smoothProgress}
-                range={[0.38, 0.52]}
-                className="mb-6 flex items-center gap-3" children={undefined}              >
+                progress={progress}
+                range={[0.4, 0.5]}
+                className="mb-5 flex items-center gap-3"
+              >
+                <span className="h-px w-8 bg-white/40" />
+                <span className="text-[11px] uppercase tracking-[0.3em] text-white/70">
+                  {PROFILE.eyebrow}
+                </span>
+                <span className="h-px w-8 bg-white/40" />
+              </ScrollReveal>
+
+              <ScrollReveal progress={progress} range={[0.46, 0.58]} className="mb-5">
+                <p className="text-4xl font-bold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-7xl">
+                  {PROFILE.name}
+                </p>
+                <p className="mt-3 text-lg font-medium text-[#88C0D0] sm:text-xl lg:text-2xl">
+                  {PROFILE.headline}
+                </p>
+              </ScrollReveal>
+
+              <ScrollReveal progress={progress} range={[0.54, 0.66]} className="mb-8">
+                <p className="max-w-xl text-sm leading-relaxed text-white/80 drop-shadow-[0_1px_12px_rgba(0,0,0,0.5)] sm:text-base lg:text-lg">
+                  {PROFILE.bio}
+                </p>
+              </ScrollReveal>
+
+              <ScrollReveal progress={progress} range={[0.62, 0.74]}>
+                <ul className="flex flex-wrap items-center justify-center gap-2">
+                  {PROFILE.focus.map((item) => (
+                    <li
+                      key={item}
+                      className="rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.15em] text-white/85 backdrop-blur-sm"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </ScrollReveal>
             </div>
           </ScrollMaskCard>
-
-          {/* Scroll indicator */}
-          <motion.div
-            style={{ opacity: indicatorOpacity }}
-            className="pointer-events-none absolute bottom-8 left-0 right-0 z-20 text-center text-[9px] uppercase tracking-[0.3em] text-white/40"
-          >
-            Scroll to explore
-          </motion.div>
         </div>
       </div>
     </section>
