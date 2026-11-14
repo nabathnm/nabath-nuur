@@ -168,10 +168,13 @@ export default function TerminalModal({
       {/* Specular glass bevel & highlight border layer */}
       <Glass rounded="rounded-2xl" />
 
-      {/* Terminal Window Header Bar (Frosted translucent) */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#2E3440]/60 backdrop-blur-md px-4 py-3 select-none">
+      {/* Terminal Window Header Bar (Glass Top Bar) */}
+      <div className="relative z-10 flex items-center justify-between overflow-hidden border-b border-white/[0.12] bg-[#2E3440]/45 backdrop-blur-xl px-4 py-3 select-none">
+        {/* Glass reflection and outline effect on top bar */}
+        <Glass rounded="rounded-t-2xl" />
+
         {/* Traffic light window controls */}
-        <div className="flex items-center gap-2">
+        <div className="relative z-10 flex items-center gap-2">
           <button
             type="button"
             onClick={onClose}
@@ -186,7 +189,7 @@ export default function TerminalModal({
         </div>
 
         {/* Terminal Title */}
-        <div className="flex items-center gap-2 text-white/70 text-xs">
+        <div className="relative z-10 flex items-center gap-2 text-white/80 text-xs">
           <Terminal className="h-3.5 w-3.5 text-[#88C0D0]" />
           <span className="font-mono text-[11px] sm:text-xs tracking-tight">
             nabath@cosmic-os: ~/{activeInfo.id}
@@ -194,7 +197,7 @@ export default function TerminalModal({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1.5">
+        <div className="relative z-10 flex items-center gap-1.5">
           <button
             type="button"
             onClick={handleCopy}
