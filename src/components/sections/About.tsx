@@ -1,19 +1,18 @@
 "use client"
 
 import CatHeadPointer from "@/components/svg/CatHeadPointer"
+import { Code2, Sparkles } from "lucide-react"
 import {
   motion,
-  useAnimationFrame,
   useInView,
-  useMotionValue,
   useReducedMotion,
   useScroll,
   useSpring,
   useTransform,
-  useVelocity,
 } from "framer-motion"
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import ScrollMaskCard, { ScrollReveal } from "../common/ScrollMaskCard"
+import AboutFloatingItems from "../common/AboutFloatingItems"
 
 /* =====================================================
    CONTENT (edit here — no need to touch the JSX)
@@ -54,22 +53,9 @@ function getDirectImageUrl(url: string): string {
 // Resolved once at module level instead of on every render
 const PROFILE_IMAGE_URL = getDirectImageUrl(PROFILE.image)
 
-/* =====================================================
-   MARQUEE SETTINGS (matches the Project section title style)
-====================================================== */
-const BASE_SPEED = 70 // px/s, automatic drift (to the left)
-const VELOCITY_GAIN = 0.35 // how strongly scroll velocity affects the marquee
-const MAX_VELOCITY = 4000 // velocity clamp
-const MAX_SKEW = 8 // max dynamic skew (deg)
-const MARQUEE_COPIES = 5
-
 export default function About() {
   const trackRef = useRef<HTMLDivElement>(null)
-  const firstGroupRef = useRef<HTMLDivElement>(null)
-  const groupWidthRef = useRef(0)
-
   const reduce = useReducedMotion() ?? false
-  const inView = useInView(trackRef, { margin: "200px 0px" })
 
   // Progress of the sticky track (0 → 1), smoothed with a spring
   // (the spring is skipped when the user prefers reduced motion).
@@ -84,62 +70,7 @@ export default function About() {
   })
   const progress = reduce ? scrollYProgress : springProgress
 
-  // Page scroll velocity → marquee acceleration & dynamic skew
-  const { scrollY } = useScroll()
-  const scrollVelocity = useVelocity(scrollY)
-  const smoothVelocity = useSpring(scrollVelocity, {
-    damping: 50,
-    stiffness: 400,
-  })
-
-  // Horizontal marquee position (seamless loop)
-  const x = useMotionValue(0)
-
-  const skewX = useTransform(
-    smoothVelocity,
-    [-3000, 0, 3000],
-    [MAX_SKEW, 0, -MAX_SKEW]
-  )
-
-  // Measure one marquee group for a seamless loop
-  useEffect(() => {
-    const element = firstGroupRef.current
-    if (!element) return
-
-    const update = (width?: number) => {
-      groupWidthRef.current = width ?? element.offsetWidth
-    }
-
-    update()
-
-    const observer = new ResizeObserver((entries) => {
-      update(entries[0]?.borderBoxSize?.[0]?.inlineSize)
-    })
-
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
-
-  // Continuous drift + scroll-velocity response (paused when off-screen)
-  useAnimationFrame((_, delta) => {
-    const width = groupWidthRef.current
-    if (reduce || !inView || width <= 0) return
-
-    const dt = Math.min(delta, 64) / 1000
-    const v = Math.max(
-      -MAX_VELOCITY,
-      Math.min(MAX_VELOCITY, smoothVelocity.get())
-    )
-
-    const speed = -BASE_SPEED - v * VELOCITY_GAIN
-    let next = (x.get() + speed * dt) % width
-    if (next > 0) next -= width
-
-    x.set(next)
-  })
-
-  const indicatorOpacity = useTransform(progress, [0, 0.12], [1, 0])
-  // Marquee + mini header are clearly visible at the start and fade as the card expands
+  // Mini header, background text, and floating items fade out as the card expands
   const introOpacity = useTransform(progress, [0, 0.25], [1, 0])
 
   return (
@@ -150,7 +81,7 @@ export default function About() {
       aria-labelledby="about-heading"
       className="relative overflow-x-clip bg-transparent text-white"
     >
-      {/* The marquee is decorative (aria-hidden), so expose a real heading */}
+      {/* The background text is decorative (aria-hidden), so expose a real heading */}
       <h2 id="about-heading" className="sr-only">
         About me — {PROFILE.name}
       </h2>
@@ -161,7 +92,7 @@ export default function About() {
           {/* SECTION MINI HEADER */}
           <motion.div
             style={{ opacity: introOpacity }}
-            className="pointer-events-none absolute inset-x-0 top-10 z-20"
+            className="pointer-events-none absolute inset-x-0 top-10 z-30"
           >
             <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
               <div className="flex items-center gap-3">
@@ -177,45 +108,37 @@ export default function About() {
             </div>
           </motion.div>
 
-          {/* BACKGROUND MARQUEE */}
+          {/* BACKGROUND EDITORIAL HEADLINE */}
           <motion.div
             style={{ opacity: introOpacity }}
-            className="pointer-events-none absolute inset-0 z-0 flex select-none items-center justify-center overflow-hidden"
+            className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center select-none px-6"
             aria-hidden="true"
           >
-            {/* Wrapper: dynamic skew follows scroll velocity */}
-            <motion.div
-              style={reduce ? undefined : { skewX }}
-              className="will-change-transform"
-            >
-              {/* Track: continuous horizontal translate */}
-              <motion.div
-                style={{ x: reduce ? 0 : x }}
-                className="flex w-max transform-gpu items-center whitespace-nowrap will-change-transform"
-              >
-                {Array.from({ length: MARQUEE_COPIES }).map((_, index) => (
-                  <div
-                    key={index}
-                    ref={index === 0 ? firstGroupRef : undefined}
-                    className="flex shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12 lg:gap-16 lg:pr-16"
-                  >
-                    <span className="text-[clamp(4.5rem,15vw,13rem)] font-bold leading-none tracking-tighter text-white/[0.09]">
-                      About
-                    </span>
-
-                    <span
-                      className="text-[clamp(4.5rem,15vw,13rem)] font-bold leading-none tracking-tighter text-transparent"
-                      style={{ WebkitTextStroke: "1.5px rgba(255,255,255,0.22)" }}
-                    >
-                      Me
-                    </span>
-
-                    <CatHeadPointer className="h-[clamp(2.5rem,7vw,6.5rem)] w-[clamp(2.5rem,7vw,6.5rem)] shrink-0 opacity-25 drop-shadow-[0_2px_12px_rgba(136,192,208,0.25)]" />
-                  </div>
-                ))}
-              </motion.div>
-            </motion.div>
+            <div className="flex flex-col items-center justify-center gap-3 sm:gap-5 md:gap-7 text-center font-bold tracking-tight text-white/[0.08] text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[6.5rem] 2xl:text-[7.5rem] leading-none">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+                <span>Everything</span>
+                <CatHeadPointer className="h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 opacity-30 drop-shadow-[0_2px_12px_rgba(136,192,208,0.3)]" />
+                <span>You</span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+                <span>Need</span>
+                <Sparkles className="h-7 w-7 sm:h-10 sm:w-10 lg:h-14 lg:w-14 text-[#EBCB8B] opacity-35" />
+                <span>To</span>
+                <span>Build</span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+                <span>Digital</span>
+                <Code2 className="h-7 w-7 sm:h-10 sm:w-10 lg:h-14 lg:w-14 text-[#A3BE8C] opacity-35" />
+                <span className="relative inline-block rounded-2xl border border-[#A3BE8C]/30 bg-[#A3BE8C]/15 px-3 py-0.5 sm:px-5 sm:py-1 text-[#A3BE8C] opacity-70">
+                  Experiences
+                </span>
+              </div>
+            </div>
           </motion.div>
+
+          {/* FLOATING COMPONENTS (Ref: Umi Landing Page Floating Constellation) */}
+          <AboutFloatingItems introOpacity={introOpacity} />
+          
 
           {/* MAIN PROFILE CARD → scroll-driven fullscreen mask */}
           <ScrollMaskCard

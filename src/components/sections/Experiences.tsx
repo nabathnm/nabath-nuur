@@ -16,6 +16,7 @@ import {
 import Snap from "lenis/snap";
 import { BriefcaseBusiness, CalendarDays, ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import BouncingText from "../ui/bouncing-text";
 
 /* =====================================================
    CARD STACK CONFIGURATION
@@ -391,12 +392,14 @@ export default function Experiences() {
                         </div>
                     </div>
 
-                    <h2
-                        id="experiences-heading"
-                        className="relative z-10 mx-auto mb-6 w-full max-w-[1600px] px-6 pt-16 text-3xl font-bold text-white/50 sm:text-4xl sm:pt-10 md:px-8 lg:px-12 lg:pt-4 lg:text-5xl xl:text-6xl"
-                    >
-                        My Journey Through the Tech Landscape.
-                    </h2>
+                          <div className="relative z-10 mx-auto mb-0 w-full max-w-[1600px] px-6 pt-6 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-[4.6rem]">
+                            <BouncingText intensity="subtle" className="w-240">
+                              Technologies used across
+                            </BouncingText>
+                            <BouncingText intensity="subtle" className="w-240 pt-2">
+                              Software Development.
+                            </BouncingText>
+                          </div>
 
                     <div className="relative z-10 w-full px-6 md:px-8 lg:px-12">
                         <div className="mx-auto w-full max-w-[1600px]">

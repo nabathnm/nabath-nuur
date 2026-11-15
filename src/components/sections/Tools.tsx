@@ -300,15 +300,18 @@ export default function Tools() {
       </div>
 
       {/* ── Title ── */}
-      <div className="relative z-10 mx-auto mb-6 w-full max-w-[1600px] px-6 pt-4 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-6xl">
-        <BouncingText intensity="subtle">
-          Technologies used across software development.
+      <div className="relative z-10 mx-auto mb-0 w-full max-w-[1600px] px-6 pt-6 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-[4.6rem]">
+        <BouncingText intensity="subtle" className="w-240">
+          Technologies used across
+        </BouncingText>
+        <BouncingText intensity="subtle" className="w-240 pt-2">
+          Software Development.
         </BouncingText>
       </div>
 
       {/* ── Marquee stage ── */}
       <div
-        className="relative z-10 my-auto flex w-full flex-col gap-1 overflow-hidden py-2 sm:gap-2"
+        className="relative z-10 my-auto flex w-full flex-col gap-1 overflow-hidden pb-2 pt-0 sm:gap-2"
         style={{
           // PERF: Fade edges via mask (GPU-composited, no paint cost)
           maskImage:
