@@ -1,9 +1,7 @@
 "use client";
 
 import { useLenis } from "@/lib/lenis";
-import { useReducedMotion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import React, { useId, useMemo, useRef } from "react";
 
 /* =====================================================
    TYPES & DATA
@@ -80,9 +78,7 @@ const CARDS_DATA: TransitionCard[] = [
    3D ARTWORK COMPONENTS (Ref: Camera, Notebook, Darts, etc.)
 ====================================================== */
 
-function CardArtwork({ type, theme }: { type: TransitionCard["artType"]; theme: TransitionCard["theme"] }) {
-  const isDark = theme === "dark" || theme === "blue" || theme === "orange" || theme === "green";
-
+function CardArtwork({ type }: { type: TransitionCard["artType"] }) {
   switch (type) {
     case "camera":
       // 3D Movie Camera / Lens (Ref: Video Production card)
@@ -357,7 +353,7 @@ function TransitionCardItem({
     >
       {/* 3D Illustration Canvas */}
       <div className="relative z-10 w-full pt-2">
-        <CardArtwork type={card.artType} theme={card.theme} />
+        <CardArtwork type={card.artType} />
       </div>
 
       {/* Bottom Information & Action Button */}
@@ -419,7 +415,7 @@ export default function HeroAboutDivider({ className = "" }: HeroAboutDividerPro
     <div
       role="region"
       aria-label="Capabilities Transition Divider"
-      className={`relative z-20 w-full select-none overflow-y-visible overflow-x-clip bg-transparent -mt-24 sm:-mt-32 md:-mt-40 lg:-mt-48 xl:-mt-72 ${className}`}
+      className={`relative z-20 w-full select-none overflow-x-clip overflow-y-visible bg-transparent -mt-24 sm:-mt-32 md:-mt-40 lg:-mt-48 xl:-mt-64 -mb-24 sm:-mb-32 md:-mb-40 lg:-mb-48 xl:-mb-56 ${className}`}
     >
       {/* Radial ambient lighting */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(136,192,208,0.06),transparent_70%)]" />
@@ -429,7 +425,7 @@ export default function HeroAboutDivider({ className = "" }: HeroAboutDividerPro
       <div className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#2E3440] to-transparent z-30 lg:hidden" />
 
       {/* Stationary Cards Stage: generous vertical headroom to prevent any clipping */}
-      <div className="relative z-10 w-full xl:overflow-visible no-scrollbar pt-12 pb-16 sm:pt-16 sm:pb-20 flex items-center justify-start xl:justify-center px-6 sm:px-10 lg:px-14">
+      <div className="relative z-10 w-full overflow-visible no-scrollbar pt-12 pb-16 sm:pt-16 sm:pb-20 flex items-center justify-center px-6 sm:px-10 lg:px-14">
         <div className="flex shrink-0 items-center -space-x-10 sm:-space-x-14 md:-space-x-16 lg:-space-x-20 xl:space-x-12 py-4">
           {CARDS_DATA.map((card, idx) => (
             <div

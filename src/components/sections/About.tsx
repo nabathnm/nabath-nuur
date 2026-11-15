@@ -4,7 +4,6 @@ import CatHeadPointer from "@/components/svg/CatHeadPointer"
 import { Code2, Sparkles } from "lucide-react"
 import {
   motion,
-  useInView,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -13,6 +12,7 @@ import {
 import { useRef } from "react"
 import ScrollMaskCard, { ScrollReveal } from "../common/ScrollMaskCard"
 import AboutFloatingItems from "../common/AboutFloatingItems"
+import AsciiBackground from "../ui/AsciiBackground"
 
 /* =====================================================
    CONTENT (edit here — no need to touch the JSX)
@@ -89,24 +89,8 @@ export default function About() {
       {/* SCROLL TRACK (sticky stage + scroll-driven card) */}
       <div ref={trackRef} className="relative z-10 h-[260vh]">
         <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
-          {/* SECTION MINI HEADER */}
-          <motion.div
-            style={{ opacity: introOpacity }}
-            className="pointer-events-none absolute inset-x-0 top-10 z-30"
-          >
-            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
-              <div className="flex items-center gap-3">
-                <span className="h-px w-8 bg-white/30" />
-                <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
-                  About
-                </span>
-              </div>
-
-              <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
-                (01) Biography
-              </span>
-            </div>
-          </motion.div>
+          {/* ASCII BACKGROUND (shadcn-style interactive matrix) */}
+          <AsciiBackground className="z-0" opacity={0.2} />
 
           {/* BACKGROUND EDITORIAL HEADLINE */}
           <motion.div

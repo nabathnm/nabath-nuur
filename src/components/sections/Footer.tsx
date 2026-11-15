@@ -1,4 +1,4 @@
-import { Code2, Mail, ArrowUpRight } from "lucide-react"
+import { Code2, Mail } from "lucide-react"
 
 export default function Footer() {
   const socials = [

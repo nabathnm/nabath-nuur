@@ -4,10 +4,6 @@ import CatHeadPointer from "@/components/svg/CatHeadPointer";
 import { motion, useReducedMotion, type MotionValue } from "framer-motion";
 import {
   Check,
-  CheckCircle2,
-  Code2,
-  Cpu,
-  Flame,
   GitBranch,
   Layers,
   Sparkles,
@@ -19,7 +15,6 @@ import React from "react";
 // Asset imports
 import cvImg from "../sticker/cv.png";
 import laptopImg from "../sticker/laptop.png";
-import sotoImg from "../sticker/soto_lamongan.png";
 import ubImg from "../sticker/ub.png";
 
 interface AboutFloatingItemsProps {

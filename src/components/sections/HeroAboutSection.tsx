@@ -8,8 +8,6 @@ import CatHeadPointer from "@/components/svg/CatHeadPointer";
 import { useLenis } from "@/lib/lenis";
 import {
   motion,
-  useInView,
-  useMotionValue,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -17,8 +15,9 @@ import {
   type Variants,
 } from "framer-motion";
 import { ArrowUpRight, Code2, Sparkles } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import AboutFloatingItems from "@/components/common/AboutFloatingItems";
+import AsciiBackground from "@/components/ui/AsciiBackground";
 
 /* =====================================================
    ABOUT PROFILE DATA
@@ -397,25 +396,6 @@ export default function HeroAboutSection() {
   const heroRef = useRef<HTMLElement>(null);
   const [selectedSticker, setSelectedSticker] = useState<StickerInfo | null>(null);
 
-  const GRID_SIZE = 80;
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const springX = useSpring(mouseX, { damping: 60, stiffness: 30, mass: 1 });
-  const springY = useSpring(mouseY, { damping: 60, stiffness: 30, mass: 1 });
-
-  const parallaxX = useTransform(springX, [0, 1], [-12, 12]);
-  const parallaxY = useTransform(springY, [0, 1], [-12, 12]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX / window.innerWidth);
-      mouseY.set(e.clientY / window.innerHeight);
-    };
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
-
   const heroContainerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -477,50 +457,8 @@ export default function HeroAboutSection() {
         ref={heroRef}
         className="relative flex min-h-screen items-center pt-10 pb-12 sm:pt-10 lg:pt-0"
       >
-        {/* Animated Background Grid */}
-        <motion.div
-          className="pointer-events-none absolute inset-[-80px] opacity-[0.04]"
-          style={{
-            x: parallaxX,
-            y: parallaxY,
-            backgroundImage: `
-              linear-gradient(rgba(136,192,208,0.45) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(136,192,208,0.45) 1px, transparent 1px)
-            `,
-            backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
-          }}
-        >
-          <motion.div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(136,192,208,0.45) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(136,192,208,0.45) 1px, transparent 1px)
-              `,
-              backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
-            }}
-            animate={{
-              backgroundPosition: [
-                "0px 0px, 0px 0px",
-                `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE}px ${GRID_SIZE}px`,
-              ],
-            }}
-            transition={{
-              duration: 25,
-              ease: "linear",
-              repeat: Infinity,
-            }}
-          />
-        </motion.div>
-
-        {/* Radial vignette mask */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 50%, transparent 0%, #2E3440 80%)",
-          }}
-        />
+        {/* ASCII Background (shadcn-style interactive matrix) */}
+        <AsciiBackground className="z-0" opacity={0.25} />
 
         {/* Hero Content Grid */}
         <div className="pointer-events-none relative z-10 flex min-h-screen w-full items-center pt-10 pb-16">
@@ -568,7 +506,7 @@ export default function HeroAboutSection() {
       <div
         role="region"
         aria-label="Capabilities Transition Divider"
-        className="relative z-20 w-full select-none overflow-visible bg-transparent -mt-24 sm:-mt-32 md:-mt-40 lg:-mt-48 xl:-mt-52"
+        className="relative z-20 w-full select-none overflow-x-clip overflow-y-visible bg-transparent -mt-24 sm:-mt-32 md:-mt-40 lg:-mt-48 xl:-mt-64 -mb-24 sm:-mb-32 md:-mb-40 lg:-mb-48 xl:-mb-56"
       >
         {/* Radial ambient lighting */}
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_50%,rgba(136,192,208,0.06),transparent_70%)]" />
@@ -578,8 +516,8 @@ export default function HeroAboutSection() {
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#2E3440] to-transparent z-30 lg:hidden" />
 
         {/* Stationary Cards Stage: generous vertical headroom to prevent any clipping */}
-        <div className="relative z-10 w-full overflow-x-auto xl:overflow-visible no-scrollbar pt-12 pb-16 sm:pt-16 sm:pb-20 flex items-center justify-start xl:justify-center px-6 sm:px-10 lg:px-14">
-          <div className="flex shrink-0 items-center -space-x-10 sm:-space-x-14 md:-space-x-16 lg:-space-x-20 xl:-space-x-24 py-4">
+        <div className="relative z-10 w-full overflow-visible no-scrollbar pt-12 pb-16 sm:pt-16 sm:pb-20 flex items-center justify-center px-6 sm:px-10 lg:px-14">
+          <div className="flex shrink-0 items-center -space-x-10 sm:-space-x-14 md:-space-x-16 lg:-space-x-20 xl:space-x-12 py-4">
             {TRANSITION_CARDS.map((card, idx) => (
               <div
                 key={card.id}
@@ -611,24 +549,8 @@ export default function HeroAboutSection() {
         {/* SCROLL TRACK (sticky stage + scroll-driven card) */}
         <div ref={aboutTrackRef} className="relative z-10 h-[260vh]">
           <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
-            {/* SECTION MINI HEADER */}
-            <motion.div
-              style={{ opacity: introOpacity }}
-              className="pointer-events-none absolute inset-x-0 top-10 z-30"
-            >
-              <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 md:px-8 lg:px-16">
-                <div className="flex items-center gap-3">
-                  <span className="h-px w-8 bg-white/30" />
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/35">
-                    About
-                  </span>
-                </div>
-
-                <span className="text-[10px] uppercase tracking-[0.3em] text-white/25">
-                  (01) Biography
-                </span>
-              </div>
-            </motion.div>
+            {/* ASCII Background (shadcn-style interactive matrix) */}
+            <AsciiBackground className="z-0" opacity={0.2} />
 
             {/* BACKGROUND EDITORIAL HEADLINE */}
             <motion.div

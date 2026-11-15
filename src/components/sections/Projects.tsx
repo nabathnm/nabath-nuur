@@ -1,7 +1,5 @@
 "use client"
 
-import CatHeadPointer from "@/components/svg/CatHeadPointer"
-import { BouncingText } from "@/components/ui/bouncing-text"
 import { useLenis } from "@/lib/lenis"
 import {
   motion,
