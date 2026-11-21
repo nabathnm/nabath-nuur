@@ -16,28 +16,26 @@ import Glass from "../ui/glass"
    CONSTANTS & HELPERS
 ====================================================== */
 
-const CARD_W = 270
-const CARD_H = 390
+export const DEFAULT_CARD_W = 330
+export const DEFAULT_CARD_H = 475
 const CARD_RADIUS = 32
 
-/** Card finishes expanding at this scroll progress; the rest is "hold" time. */
-const EXPAND_END = 0.65
+/** Progress milestones for the 3-phase scroll choreography:
+ * Phase 1 (0.00 -> 0.22): Card emerges from bottom up to the center of the viewport.
+ * Phase 2 (0.22 -> 0.34): Card stays centered at rest (user can inspect the profile card).
+ * Phase 3 (0.34 -> 0.72): Card expands from center to fullscreen with scroll mask.
+ * Phase 4 (0.72 -> 1.00): Fullscreen content hold.
+ */
+const ENTRY_START = 0.0
+const ENTRY_END = 0.22
+const EXPAND_START = 0.34
+const EXPAND_END = 0.72
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect
-
-/** Resting size of the card, kept proportional and safe on small screens. */
-function baseSize(frameW: number, frameH: number) {
-  const width = Math.min(
-    CARD_W,
-    frameW * 0.8,
-    (frameH * 0.75 * CARD_W) / CARD_H
-  )
-  return { width, height: (width * CARD_H) / CARD_W }
-}
 
 /* =====================================================
    SCROLL REVEAL (scrubbed fade + rise tied to progress)
@@ -75,6 +73,9 @@ interface ScrollMaskCardProps {
   progress: MotionValue<number>
   imageSrc?: string
   imageAlt?: string
+  /** Resting card dimensions before scroll expansion (default: 330x475) */
+  cardWidth?: number
+  cardHeight?: number
   /** Shown while the card is still small (fades out as it grows). */
   idleContent?: ReactNode
   /** Fullscreen content (revealed with <ScrollReveal />). */
@@ -85,11 +86,22 @@ export default function ScrollMaskCard({
   progress,
   imageSrc,
   imageAlt = "",
+  cardWidth = DEFAULT_CARD_W,
+  cardHeight = DEFAULT_CARD_H,
   idleContent,
   children,
 }: ScrollMaskCardProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion()
+
+  const baseSize = (fW: number, fH: number) => {
+    const width = Math.min(
+      cardWidth,
+      fW * 0.85,
+      (fH * 0.78 * cardWidth) / cardHeight
+    )
+    return { width, height: (width * cardHeight) / cardWidth }
+  }
 
   // Frame size lives in motion values -> no React re-render on resize/scroll.
   const frameW = useMotionValue(1280)
@@ -129,7 +141,20 @@ export default function ScrollMaskCard({
 
   /* ---------- scroll-driven values ---------- */
 
-  const expand = useTransform(progress, [0, EXPAND_END], [0, 1], {
+  // Phase 1: Card emerges from bottom up to the vertical center of the screen
+  const entryY = useTransform([progress, frameH], (latest: number[]) => {
+    const [p, h] = latest
+    if (reduceMotion) return 0
+    if (p <= ENTRY_START) return h * 0.85
+    if (p >= ENTRY_END) return 0
+    const t = (p - ENTRY_START) / (ENTRY_END - ENTRY_START)
+    // easeOutCubic for a smooth deceleration into center stage
+    const eased = 1 - Math.pow(1 - t, 3)
+    return (h * 0.85) * (1 - eased)
+  })
+
+  // Phase 3: Card expands from center to fullscreen with mask effect
+  const expand = useTransform(progress, [EXPAND_START, EXPAND_END], [0, 1], {
     ease: easeInOutSine,
   })
 
@@ -157,23 +182,33 @@ export default function ScrollMaskCard({
     ["rgba(255,255,255,0.1)", "rgba(255,255,255,0)"]
   )
 
-  const y = useTransform([float, expand], (latest: number[]) => {
-    const [f, e] = latest
-    return f * (1 - e)
+  // Vertical position combines entry rise + gentle idle float in center
+  const y = useTransform([entryY, float, expand], (latest: number[]) => {
+    const [ey, f, e] = latest
+    const settle = ey < 80 ? Math.max(0, 1 - ey / 80) : 0
+    const expandFade = Math.max(0, 1 - e)
+    return ey + f * settle * expandFade
   })
 
-  const rotate = useTransform([float, expand], (latest: number[]) => {
-    const [f, e] = latest
-    return (-3 + (f + 5) / 10) * (1 - e)
+  // Rotation: starts slightly tilted like the divider deck, straightens as it reaches center, then straightens to 0 on expand
+  const rotate = useTransform([progress, float, expand], (latest: number[]) => {
+    const [p, f, e] = latest
+    if (reduceMotion) return 0
+    let baseRot = -2.5
+    if (p < ENTRY_END) {
+      const t = Math.max(0, p / ENTRY_END)
+      baseRot = 6 * (1 - t) + (-2.5) * t
+    }
+    return (baseRot + (f + 5) / 15) * (1 - e)
   })
 
-  const idleOpacity = useTransform(expand, [0, 0.3], [1, 0])
+  const idleOpacity = useTransform(expand, [0, 0.35], [1, 0])
   const glassOpacity = useTransform(expand, [0, 0.5], [1, 0])
-  const dimOpacity = useTransform(progress, [0.3, 0.7], [0, 0.6])
+  const dimOpacity = useTransform(expand, [0.25, 0.75], [0, 0.6])
 
   const contentPointerEvents = useTransform(
     progress,
-    (v: number): "auto" | "none" => (v > 0.85 ? "auto" : "none")
+    (v: number): "auto" | "none" => (v > 0.75 ? "auto" : "none")
   )
 
   return (
@@ -182,7 +217,14 @@ export default function ScrollMaskCard({
       className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
     >
       <motion.div
-        style={{ width, height, borderRadius, borderColor, y, rotate }}
+        style={{
+          width,
+          height,
+          borderRadius,
+          borderColor,
+          y,
+          rotate,
+        }}
         className="
           pointer-events-auto
           relative shrink-0
@@ -248,9 +290,11 @@ export default function ScrollMaskCard({
         {children && (
           <motion.div
             style={{ pointerEvents: contentPointerEvents }}
-            className="absolute inset-0 z-20 flex items-center justify-center overflow-hidden px-6 md:px-8"
+            className="absolute inset-0 z-20 flex items-center justify-center overflow-hidden"
           >
-            <div className="mx-auto w-full max-w-4xl">{children}</div>
+            <div className="flex h-full w-full items-center justify-center">
+              {children}
+            </div>
           </motion.div>
         )}
       </motion.div>

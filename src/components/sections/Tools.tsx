@@ -3,8 +3,10 @@
 import { BouncingText } from "@/components/ui/bouncing-text";
 import { useTools } from "@/hooks/useTools";
 import type { Tool } from "@/models/tool";
+import { motion, useReducedMotion } from "framer-motion";
 import { Cpu } from "lucide-react";
 import React, { useEffect, useRef } from "react";
+import cat2Img from "../sticker/cat2.png";
 
 /* =====================================================
    SEPARATOR TYPES
@@ -250,6 +252,7 @@ const MarqueeRow = React.memo(function MarqueeRow({
 export default function Tools() {
   const { tools, loading, error } = useTools();
   const sectionRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
   // PERF: Track whether section is in viewport to pause animations
   const [isVisible, setIsVisible] = React.useState(false);
 
@@ -300,13 +303,40 @@ export default function Tools() {
       </div>
 
       {/* ── Title ── */}
-      <div className="relative z-10 mx-auto mb-0 w-full max-w-[1600px] px-6 pt-6 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-[4.6rem]">
-        <BouncingText intensity="subtle" className="w-240">
-          Technologies used across
-        </BouncingText>
-        <BouncingText intensity="subtle" className="w-240 pt-2">
-          Software Development.
-        </BouncingText>
+      <div className="relative z-10 mx-auto mb-0 w-full max-w-[1600px] px-6 pt-4 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-[4.6rem]">
+        <div className="max-w-[75%] md:max-w-[70%]">
+          <BouncingText intensity="subtle" duration={0.80} stagger={0.055} tempo="varied" className="w-240">
+            Technologies used across
+          </BouncingText>
+          <BouncingText intensity="subtle" duration={0.94} stagger={0.048} delayOffset={10} tempo="varied" className="w-240 pt-2">
+            Software Development.
+          </BouncingText>
+        </div>
+
+        {/* Absolute Cat 2 di sebelah kanan title */}
+        <motion.div
+          animate={
+            reduceMotion
+              ? undefined
+              : {
+                  y: [10, 20, 10],
+                  rotate: [-1, 2.5, -1],
+                }
+          }
+          transition={{
+            duration: 4.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="pointer-events-none absolute right-4 sm:right-8 md:right-12 lg:right-16 top-1/2 -translate-y-1/2 select-none z-20"
+        >
+          <img
+            src={cat2Img}
+            alt="Cat mascot"
+            draggable={false}
+            className="w-20 sm:w-28 md:w-36 lg:w-48 xl:w-56 h-auto object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105 pointer-events-auto"
+          />
+        </motion.div>
       </div>
 
       {/* ── Marquee stage ── */}

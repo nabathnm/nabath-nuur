@@ -3,7 +3,6 @@ import { useRef, useState } from "react"
 import FloatingStickers from "../common/FloatingStickers"
 import MagneticHeadline from "../common/MagneticHeadline"
 import TerminalModal, { type StickerInfo } from "../common/TerminalModal"
-import AsciiBackground from "../ui/AsciiBackground"
 
 export default function Hero() {
   const heroRef = useRef<HTMLElement>(null)
@@ -41,10 +40,11 @@ export default function Hero() {
       ref={heroRef}
       className="relative flex min-h-screen items-center overflow-hidden pt-10 pb-12 sm:pt-10 lg:pt-0 text-white"
     >
-      {/* =====================================================
-          ASCII BACKGROUND (shadcn-style interactive matrix)
-      ====================================================== */}
-      <AsciiBackground className="z-0" opacity={0.25} />
+      {/* Ambient background glow (pure CSS, lightweight) */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-[#88C0D0]/[0.04] blur-3xl" />
+        <div className="absolute top-1/2 -right-40 h-[500px] w-[500px] rounded-full bg-[#5E81AC]/[0.04] blur-3xl" />
+      </div>
 
       {/* =====================================================
           HERO CONTENT (Left Editorial Headline + Right Standby Terminal)

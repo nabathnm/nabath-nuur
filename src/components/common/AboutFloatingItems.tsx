@@ -1,6 +1,5 @@
 "use client";
 
-import CatHeadPointer from "@/components/svg/CatHeadPointer";
 import { motion, useReducedMotion, type MotionValue } from "framer-motion";
 import {
   Check,
@@ -8,7 +7,6 @@ import {
   Layers,
   Sparkles,
   Star,
-  Zap,
 } from "lucide-react";
 import React from "react";
 
@@ -207,10 +205,6 @@ export default function AboutFloatingItems({
       </FloatingCard>
 
       {/* =========================================================================
-          5. MID-RIGHT (UPPER): Culinary Fuel Preview (Ref: Chilli Broccoli pill)
-          ========================================================================= */}
-
-      {/* =========================================================================
           6. MID-LEFT: Coffee Chat / Developer Philosophy (Ref: Speech bubble)
           ========================================================================= */}
       <FloatingCard
@@ -261,58 +255,6 @@ export default function AboutFloatingItems({
               IT Major • Class of '26
             </span>
           </div>
-        </div>
-      </FloatingCard>
-
-      {/* =========================================================================
-          8. BOTTOM-LEFT (LOWER): Cyan Reminder Pill (Ref: Blue "DON'T FORGET" pill)
-          ========================================================================= */}
-      <FloatingCard
-        className="hidden lg:block bottom-[8%] left-[12%] xl:left-[16%]"
-        rotate={2.5}
-        floatY={7}
-        duration={4.6}
-        delay={0.5}
-      >
-        <div className="flex items-center gap-2 rounded-full border border-[#7BB5C5] bg-[#88C0D0] px-4 py-2 text-xs font-bold text-[#2E3440] shadow-[0_10px_24px_rgba(136,192,208,0.35)]">
-          <span>Always ship 60fps & tests</span>
-          <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#2E3440] text-[#88C0D0]">
-            <Check className="h-2 w-2 stroke-[3]" />
-          </span>
-        </div>
-      </FloatingCard>
-
-      {/* =========================================================================
-          9. BOTTOM-CENTER: 60 FPS Wave Pill (Ref: "16 MIN WALK" wave pill)
-          ========================================================================= */}
-      <FloatingCard
-        className="hidden md:block bottom-[7%] left-[50%] -translate-x-1/2"
-        rotate={0}
-        floatY={6}
-        duration={4.0}
-        delay={0.3}
-      >
-        <div className="flex items-center gap-3.5 rounded-full border border-white/20 bg-[#2E3440]/90 px-4 py-2 text-white shadow-2xl backdrop-blur-md">
-          <span className="flex items-center gap-1.5 font-mono text-xs font-semibold text-[#88C0D0]">
-            <Zap className="h-3 w-3 text-[#EBCB8B]" /> 60 FPS MOTION
-          </span>
-          <span className="h-3.5 w-px bg-white/20" />
-          {/* Sinusoidal Wave SVG */}
-          <svg
-            width="56"
-            height="18"
-            viewBox="0 0 56 18"
-            fill="none"
-            className="text-[#88C0D0]"
-          >
-            <path
-              d="M1 9 C 9 0, 18 18, 27 9 C 36 0, 45 18, 54 9"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <circle cx="53" cy="9" r="2.5" fill="#A3BE8C" />
-          </svg>
         </div>
       </FloatingCard>
 
@@ -370,94 +312,6 @@ export default function AboutFloatingItems({
           </div>
         </div>
       </FloatingCard>
-
-      {/* =========================================================================
-          12. PLAYFUL DOODLES (Paper airplane, Clapping hands, Cosmo Cat, Sparkles)
-          ========================================================================= */}
-
-      {/* Doodled Paper Airplane with Dashed Flight Arc (Ref: Airplane near headline) */}
-      <motion.div
-        className="pointer-events-none absolute hidden xl:block top-[22%] right-[22%]"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-      >
-        <svg width="120" height="70" viewBox="0 0 120 70" fill="none">
-          {/* Dashed wind trail */}
-          <path
-            d="M 5 60 Q 55 10, 100 25"
-            stroke="#88C0D0"
-            strokeWidth="1.8"
-            strokeDasharray="4 4"
-            opacity="0.6"
-          />
-          {/* Paper airplane */}
-          <g transform="translate(95, 18) rotate(15)">
-            <polygon
-              points="0,0 20,-8 16,12"
-              fill="#ECEFF4"
-              stroke="#2E3440"
-              strokeWidth="1.5"
-            />
-            <polygon points="0,0 16,12 8,6" fill="#D8DEE9" />
-          </g>
-        </svg>
-      </motion.div>
-
-      {/* Doodled Cat Head Pointer (Bottom Right) */}
-      <motion.div
-        className="pointer-events-none absolute hidden md:block bottom-[18%] right-[24%] opacity-70"
-        animate={{
-          rotate: [0, 8, -6, 0],
-          y: [0, -5, 0],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        <CatHeadPointer className="h-10 w-10 drop-shadow-[0_4px_12px_rgba(136,192,208,0.3)]" />
-      </motion.div>
-
-      {/* Clapping Hands Doodle (Bottom Left near UB card) */}
-      <motion.div
-        className="pointer-events-none absolute hidden xl:block bottom-[34%] left-[18%] opacity-80"
-        animate={{
-          scale: [1, 1.15, 1],
-          rotate: [-5, 5, -5],
-        }}
-        transition={{
-          duration: 2.2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        <span className="text-2xl select-none">🙌</span>
-      </motion.div>
-
-      {/* Little Floating Sparkles (Scattered accents) */}
-      <motion.span
-        className="pointer-events-none absolute hidden lg:block top-[26%] left-[22%] text-sm text-[#EBCB8B] select-none"
-        animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.9, 0.4] }}
-        transition={{ duration: 3, repeat: Infinity }}
-      >
-        ✦
-      </motion.span>
-      <motion.span
-        className="pointer-events-none absolute hidden lg:block bottom-[20%] left-[26%] text-xs text-[#88C0D0] select-none"
-        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
-        transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
-      >
-        ✧
-      </motion.span>
-      <motion.span
-        className="pointer-events-none absolute hidden lg:block top-[18%] right-[19%] text-xs text-[#A3BE8C] select-none"
-        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
-        transition={{ duration: 3.2, repeat: Infinity, delay: 0.8 }}
-      >
-        ✦
-      </motion.span>
     </motion.div>
   );
 }

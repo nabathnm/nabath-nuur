@@ -34,7 +34,7 @@ const STANDBY_DATA: StickerInfo = {
     { label: "User", value: "nabath@cosmic-os (Nord Edition)" },
     { label: "Specialization", value: "Mobile & Frontend Engineer" },
     { label: "Core Tech", value: "Flutter • React • TypeScript • Next.js" },
-    { label: "Interactive", value: "4 Telemetry Satellites Ready" },
+    { label: "Interactive", value: "5 Telemetry Satellites Ready" },
   ],
 };
 

@@ -13,9 +13,10 @@ import {
     type MotionValue,
 } from "framer-motion";
 import Snap from "lenis/snap";
-import { ArrowUpRight, BriefcaseBusiness, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import BouncingText from "../ui/bouncing-text";
+import cat3Img from "../sticker/cat3.png";
 
 /* =====================================================
    EXPERIENCE THEME VARIATIONS (Matching HeroAboutDivider)
@@ -341,12 +342,6 @@ function StackCard({
                 {/* Header: Company & Date */}
                 <div className="pr-20 sm:pr-24">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] border shadow-xs ${theme.companyPill}`}
-                        >
-                            <BriefcaseBusiness size={12} className="shrink-0" />
-                            <span>{experience.company}</span>
-                        </span>
 
                         <span
                             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border shadow-xs ${theme.datePill}`}
@@ -358,11 +353,6 @@ function StackCard({
                         </span>
                     </div>
 
-                    <span
-                        className={`text-[10px] font-bold uppercase tracking-[0.25em] ${theme.eyebrow}`}
-                    >
-                        EXPERIENCE #{pad(index + 1)}
-                    </span>
                     <h3
                         title={experience.role}
                         className={`mt-0.5 text-xl font-bold leading-tight tracking-tight sm:text-2xl lg:text-3xl xl:text-4xl ${theme.title}`}
@@ -387,19 +377,19 @@ function StackCard({
                     </p>
                 </div>
 
-                {/* Responsibilities */}
+                {/* Jobdesk (3 baris) */}
                 {experience.tasks && experience.tasks.length > 0 && (
                     <div className="mt-auto">
                         <p
                             className={`mb-2 text-[11px] font-bold uppercase tracking-[0.2em] ${theme.descLabel}`}
                         >
-                            Key Responsibilities
+                            Jobdesk
                         </p>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
-                            {experience.tasks.map((task, idx) => (
+                        <div className="grid grid-cols-1 gap-2 sm:gap-2">
+                            {experience.tasks.slice(0, 3).map((task, idx) => (
                                 <div
                                     key={`${experience.id}-${idx}`}
-                                    className={`flex items-start gap-2.5 rounded-xl border p-2.5 sm:p-3 transition-all duration-300 ${theme.taskCard}`}
+                                    className={`flex items-start gap-2.5 rounded-xl border p-2 sm:p-2.5 transition-all duration-300 ${theme.taskCard}`}
                                 >
                                     <span
                                         className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${theme.taskDot}`}
@@ -415,29 +405,6 @@ function StackCard({
                     </div>
                 )}
 
-                {/* Card Footer (Matching HeroAboutDivider aesthetic) */}
-                <div
-                    className={`mt-2 flex items-center justify-between pt-2.5 border-t ${theme.divider}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <span
-                            className={`flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110 group-hover:rotate-45 shadow-xs ${theme.footerPillIcon}`}
-                        >
-                            <ArrowUpRight className="h-4 w-4 stroke-[2.5]" />
-                        </span>
-                        <span
-                            className={`text-[11px] font-bold tracking-[0.16em] uppercase ${theme.footerPillLabel}`}
-                        >
-                            CAREER STAGE {pad(index + 1)}
-                        </span>
-                    </div>
-
-                    <span
-                        className={`text-[11px] font-mono font-bold tracking-widest uppercase opacity-75 ${theme.eyebrow}`}
-                    >
-                        {pad(index + 1)} / {pad(total)}
-                    </span>
-                </div>
             </div>
         </motion.div>
     );
@@ -453,8 +420,15 @@ const EXPERIENCE_SNAP_CONFIG = {
     easing: (t: number) => 1 - Math.pow(1 - t, 4),
     // Wait (ms) after the user stops scrolling before snapping
     debounce: 110,
-    // Proximity snap reach
+    // Proximity snap reach for regular cards
     distanceThreshold: "40%" as const,
+
+    // Specific lighter snap configuration for the last card so user can easily exit to footer
+    lastCard: {
+        distanceThreshold: "12%" as const, // Jangkauan kecil agar tidak mudah 'tersedot'
+        duration: 0.65,                    // Durasi singkat & ringan
+        debounce: 250,                     // Debounce lebih santai
+    },
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -525,12 +499,14 @@ export default function Experiences() {
         }
     });
 
-    // Lenis proximity snap (CSS scroll-snap classes removed: the section is not
-    // a scroll container, so they did nothing and could fight with Lenis).
+    // Lenis proximity snap with 2 distinct instances:
+    // 1. Regular cards (0 to N-2): standard immersive snap (40% reach, 1.35s duration)
+    // 2. Last card (N-1): gentle, lightweight snap (12% reach, 0.65s duration) so user isn't trapped
     useEffect(() => {
         if (!lenis || reduce || experiences.length <= 1) return;
 
-        const snap = new Snap(lenis, {
+        // Instance 1: Default snap for regular cards
+        const defaultSnap = new Snap(lenis, {
             type: "proximity",
             distanceThreshold: EXPERIENCE_SNAP_CONFIG.distanceThreshold,
             duration: EXPERIENCE_SNAP_CONFIG.duration,
@@ -538,15 +514,32 @@ export default function Experiences() {
             debounce: EXPERIENCE_SNAP_CONFIG.debounce,
         });
 
+        // Instance 2: Subtle snap for the last card
+        const lastSnap = new Snap(lenis, {
+            type: "proximity",
+            distanceThreshold: EXPERIENCE_SNAP_CONFIG.lastCard.distanceThreshold,
+            duration: EXPERIENCE_SNAP_CONFIG.lastCard.duration,
+            easing: EXPERIENCE_SNAP_CONFIG.easing,
+            debounce: EXPERIENCE_SNAP_CONFIG.lastCard.debounce,
+        });
+
         const section = trackRef.current;
         if (section) {
-            const snapPoints = section.querySelectorAll<HTMLElement>("[data-experience-snap]");
-            if (snapPoints.length > 0) {
-                snap.addElements(Array.from(snapPoints), { align: "start" });
+            const defaultPoints = section.querySelectorAll<HTMLElement>('[data-experience-snap="default"]');
+            if (defaultPoints.length > 0) {
+                defaultSnap.addElements(Array.from(defaultPoints), { align: "start" });
+            }
+
+            const lastPoint = section.querySelector<HTMLElement>('[data-experience-snap="last"]');
+            if (lastPoint) {
+                lastSnap.addElement(lastPoint, { align: "start" });
             }
         }
 
-        return () => snap.destroy();
+        return () => {
+            defaultSnap.destroy();
+            lastSnap.destroy();
+        };
     }, [lenis, reduce, experiences]);
 
     // Cancel programmatic scroll lock on manual wheel / touch; clear timers on unmount
@@ -591,37 +584,6 @@ export default function Experiences() {
         }
     };
 
-    // Keyboard navigation (arrows + Home/End) with roving focus
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-        const last = experiences.length - 1;
-        let next: number | null = null;
-
-        switch (e.key) {
-            case "ArrowDown":
-            case "ArrowRight":
-                next = Math.min(last, index + 1);
-                break;
-            case "ArrowUp":
-            case "ArrowLeft":
-                next = Math.max(0, index - 1);
-                break;
-            case "Home":
-                next = 0;
-                break;
-            case "End":
-                next = last;
-                break;
-        }
-
-        if (next === null) return;
-        e.preventDefault();
-        scrollToExperience(next);
-
-        // Move focus to the newly selected tab within the same tablist
-        const tabs = e.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="tab"]');
-        tabs?.[next]?.focus();
-    };
-
     if (experiences.length === 0) return null;
 
     const trackHeight =
@@ -640,16 +602,19 @@ export default function Experiences() {
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-x-0 top-0 bottom-[100vh]"
                 >
-                    {experiences.map((exp, index) => (
-                        <div
-                            key={`snap-${exp.id}`}
-                            data-experience-snap
-                            style={{
-                                top: `${(index / Math.max(1, experiences.length - 1)) * 100}%`,
-                            }}
-                            className="absolute inset-x-0 h-px"
-                        />
-                    ))}
+                    {experiences.map((exp, index) => {
+                        const isLast = index === experiences.length - 1;
+                        return (
+                            <div
+                                key={`snap-${exp.id}`}
+                                data-experience-snap={isLast ? "last" : "default"}
+                                style={{
+                                    top: `${(index / Math.max(1, experiences.length - 1)) * 100}%`,
+                                }}
+                                className="absolute inset-x-0 h-px"
+                            />
+                        );
+                    })}
                 </div>
 
                 {/* STICKY STAGE */}
@@ -670,14 +635,43 @@ export default function Experiences() {
                         </div>
                     </div>
 
-                          <div className="relative z-10 mx-auto mb-0 w-full max-w-[1600px] px-6 pt-6 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-[4.6rem]">
-                            <BouncingText intensity="subtle" className="w-240">
-                              Technologies used across
-                            </BouncingText>
-                            <BouncingText intensity="subtle" className="w-240 pt-2">
-                              Software Development.
-                            </BouncingText>
+                          <div className="relative z-10 mx-auto w-full max-w-[1600px] px-6 text-3xl font-bold leading-[1.12] text-white md:px-8 md:text-5xl lg:px-16 lg:text-[4.6rem]">
+                            <div className="max-w-[75%] md:max-w-[70%]">
+                              <BouncingText intensity="subtle" duration={0.82} stagger={0.055} tempo="varied" className="w-240">
+                                Professional journey and
+                              </BouncingText>
+                              <BouncingText intensity="subtle" duration={0.96} stagger={0.046} delayOffset={12} tempo="varied" className="w-240 pt-2">
+                                Work Experiences.
+                              </BouncingText>
+                            </div>
+
+                            {/* Absolute Cat 3 di sebelah kanan title */}
+                            <motion.div
+                              animate={
+                                reduce
+                                  ? undefined
+                                  : {
+                                      y: [0, -10, 0],
+                                      rotate: [1, -2.5, 1],
+                                    }
+                              }
+                              transition={{
+                                duration: 4.6,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                              }}
+                              className="pointer-events-none absolute right-4 sm:right-8 md:right-12 lg:right-16 top-1/2 -translate-y-1/2 select-none z-20"
+                            >
+                              <img
+                                src={cat3Img}
+                                alt="Cat mascot"
+                                draggable={false}
+                                className="w-20 sm:w-28 md:w-36 lg:w-48 xl:w-56 h-auto object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105 pointer-events-auto"
+                              />
+                            </motion.div>
                           </div>
+
+                          
 
                     <div className="relative z-10 w-full px-6 md:px-8 lg:px-12">
                         <div className="mx-auto w-full max-w-[1600px]">
@@ -698,10 +692,9 @@ export default function Experiences() {
                                             aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
                                             tabIndex={active ? 0 : -1}
                                             onClick={() => scrollToExperience(index)}
-                                            onKeyDown={(e) => handleKeyDown(e, index)}
                                             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#88C0D0] ${
                                                 active
-                                                    ? "border-[#88C0D0]/40 bg-[#88C0D0]/10 text-white"
+                                                    ? "border-[#88C0D0]/40 bg-[#88C0D0]/10 text-white "
                                                     : "border-white/10 bg-white/2 text-white/40 hover:text-white/70"
                                             }`}
                                         >
@@ -718,66 +711,65 @@ export default function Experiences() {
                                     role="tablist"
                                     aria-label="Experiences list"
                                     aria-orientation="vertical"
-                                    className="hidden flex-col justify-center border-y border-white/[0.06] lg:col-span-6 lg:flex"
+                                    className="hidden flex-col justify-center lg:col-span-6 lg:flex"
                                 >
-    {experiences.map((experience, index) => {
-        const active = experience.id === activeId;
+                                {experiences.map((experience, index) => {
+                                    const active = experience.id === activeId;
 
-        return (
-            <button
-                key={experience.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
-                tabIndex={active ? 0 : -1}
-                onClick={() => scrollToExperience(index)}
-                onKeyDown={(e) => handleKeyDown(e, index)}
-                className="group relative flex w-full items-center border-b border-white/[0.06] py-3 text-left transition-colors duration-300 last:border-b-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#88C0D0]"
-            >
-                <div className="flex items-center gap-3">
-                    {/* Active indicator */}
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-                        {active && (
-                            <motion.div
-                                layoutId="activeExperienceIndicator"
-                                transition={
-                                    reduce
-                                        ? { duration: 0 }
-                                        : {
-                                            type: "spring",
-                                            stiffness: 380,
-                                            damping: 30,
-                                        }
-                                }
-                            >
-                                <CatHeadPointer className="h-8 w-8 drop-shadow-[0_2px_10px_rgba(136,192,208,0.2)]" />
-                            </motion.div>
-                        )}
-                    </div>
+                                    return (
+                                        <button
+                                            key={experience.id}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={active}
+                                            aria-label={`Experience ${index + 1}: ${experience.role} at ${experience.company}`}
+                                            tabIndex={active ? 0 : -1}
+                                            onClick={() => scrollToExperience(index)}
+                                            className="group relative flex w-full items-center py-3 text-left transition-colors duration-300 focus:outline-none "
+                                        >
+                                            <div className="flex items-center gap-6">
+                                                {/* Active indicator */}
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+                                                    {active && (
+                                                        <motion.div
+                                                            layoutId="activeExperienceIndicator"
+                                                            transition={
+                                                                reduce
+                                                                    ? { duration: 0 }
+                                                                    : {
+                                                                        type: "spring",
+                                                                        stiffness: 380,
+                                                                        damping: 30,
+                                                                    }
+                                                            }
+                                                        >
+                                                            <CatHeadPointer className="h-16 w-16 drop-shadow-[0_2px_10px_rgba(136,192,208,0.2)]" />
+                                                        </motion.div>
+                                                    )}
+                                                </div>
 
-                    {/* Company & Role */}
-                    <div className="min-w-0">
-                        <span
-                            className={`block truncate text-xl font-semibold tracking-tight transition-all duration-300 ${
-                                active
-                                    ? "translate-x-1 text-white"
-                                    : "text-white/35 group-hover:text-white/70"
-                            }`}
-                        >
-                            {experience.company}
-                        </span>
-                        {active && (
-                            <span className="block text-xs font-medium text-[#88C0D0] transition-opacity duration-300">
-                                {experience.role}
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </button>
-        );
-    })}
-</div>
+                                                {/* Company & Role */}
+                                                <div className="min-w-0">
+                                                    <span
+                                                        className={`block truncate font-semibold tracking-tight transition-all duration-300 text-5xl border-t border-white/[0.06] ${
+                                                            active
+                                                                ? "text-white"
+                                                                : "text-white/35 group-hover:text-white/70"
+                                                        }`}
+                                                    >
+                                                        {experience.company}
+                                                    </span>
+                                                    {active && (
+                                                        <span className="block text-xl font-medium text-[#88C0D0] transition-opacity duration-300">
+                                                            {experience.role}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
 
 
                                 {/* RIGHT — scroll-driven card stack */}

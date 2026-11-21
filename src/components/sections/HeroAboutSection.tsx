@@ -17,7 +17,6 @@ import {
 import { ArrowUpRight, Code2, Sparkles } from "lucide-react";
 import { useRef, useState } from "react";
 import AboutFloatingItems from "@/components/common/AboutFloatingItems";
-import AsciiBackground from "@/components/ui/AsciiBackground";
 
 /* =====================================================
    ABOUT PROFILE DATA
@@ -445,7 +444,7 @@ export default function HeroAboutSection() {
   });
   const aboutProgress = reduce ? scrollYProgress : springProgress;
 
-  const introOpacity = useTransform(aboutProgress, [0, 0.25], [1, 0]);
+  const introOpacity = useTransform(aboutProgress, [0.22, 0.38], [1, 0]);
 
   return (
     <div className="relative w-full overflow-x-clip bg-transparent text-white">
@@ -457,8 +456,11 @@ export default function HeroAboutSection() {
         ref={heroRef}
         className="relative flex min-h-screen items-center pt-10 pb-12 sm:pt-10 lg:pt-0"
       >
-        {/* ASCII Background (shadcn-style interactive matrix) */}
-        <AsciiBackground className="z-0" opacity={0.25} />
+        {/* Ambient background glow (pure CSS, lightweight) */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-[#88C0D0]/[0.04] blur-3xl" />
+          <div className="absolute top-1/2 -right-40 h-[500px] w-[500px] rounded-full bg-[#5E81AC]/[0.04] blur-3xl" />
+        </div>
 
         {/* Hero Content Grid */}
         <div className="pointer-events-none relative z-10 flex min-h-screen w-full items-center pt-10 pb-16">
@@ -547,11 +549,8 @@ export default function HeroAboutSection() {
         </h2>
 
         {/* SCROLL TRACK (sticky stage + scroll-driven card) */}
-        <div ref={aboutTrackRef} className="relative z-10 h-[260vh]">
+        <div ref={aboutTrackRef} className="relative z-10 h-[290vh]">
           <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
-            {/* ASCII Background (shadcn-style interactive matrix) */}
-            <AsciiBackground className="z-0" opacity={0.2} />
-
             {/* BACKGROUND EDITORIAL HEADLINE */}
             <motion.div
               style={{ opacity: introOpacity }}
@@ -588,6 +587,8 @@ export default function HeroAboutSection() {
               progress={aboutProgress}
               imageSrc={PROFILE_IMAGE_URL}
               imageAlt={PROFILE.name}
+              cardWidth={330}
+              cardHeight={475}
               idleContent={
                 <div className="relative z-10 flex h-full flex-col justify-between p-6">
                   {/* Top: status */}
@@ -625,7 +626,7 @@ export default function HeroAboutSection() {
               <div className="mx-auto flex max-w-3xl flex-col items-center px-6 text-center">
                 <ScrollReveal
                   progress={aboutProgress}
-                  range={[0.4, 0.5]}
+                  range={[0.48, 0.58]}
                   className="mb-5 flex items-center gap-3"
                 >
                   <span className="h-px w-8 bg-white/40" />
@@ -635,7 +636,7 @@ export default function HeroAboutSection() {
                   <span className="h-px w-8 bg-white/40" />
                 </ScrollReveal>
 
-                <ScrollReveal progress={aboutProgress} range={[0.46, 0.58]} className="mb-5">
+                <ScrollReveal progress={aboutProgress} range={[0.54, 0.66]} className="mb-5">
                   <p className="text-4xl font-bold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-7xl">
                     {PROFILE.name}
                   </p>
@@ -644,13 +645,13 @@ export default function HeroAboutSection() {
                   </p>
                 </ScrollReveal>
 
-                <ScrollReveal progress={aboutProgress} range={[0.54, 0.66]} className="mb-8">
+                <ScrollReveal progress={aboutProgress} range={[0.62, 0.74]} className="mb-8">
                   <p className="max-w-xl text-sm leading-relaxed text-white/80 drop-shadow-[0_1px_12px_rgba(0,0,0,0.5)] sm:text-base lg:text-lg">
                     {PROFILE.bio}
                   </p>
                 </ScrollReveal>
 
-                <ScrollReveal progress={aboutProgress} range={[0.62, 0.74]}>
+                <ScrollReveal progress={aboutProgress} range={[0.70, 0.82]}>
                   <ul className="flex flex-wrap items-center justify-center gap-2">
                     {PROFILE.focus.map((item) => (
                       <li

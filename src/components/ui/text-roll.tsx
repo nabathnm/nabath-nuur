@@ -1,163 +1,181 @@
 "use client";
 
-import { motion, useInView, useReducedMotion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  motion,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import React, { useEffect, useMemo, useRef } from "react";
 
 export interface TextRollProps {
   children: string;
+  /** Durasi satu roll (detik) */
   duration?: number;
+  /** Jeda antar huruf (detik) */
   stagger?: number;
+  /** Lama diam di tiap posisi (detik) */
   pauseDuration?: number;
-  loop?: boolean;
   className?: string;
 }
 
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+/** Satu huruf: posisinya dihitung dari jam bersama, tanpa animasi sendiri. */
+function RollChar({
+  char,
+  index,
+  time,
+  duration,
+  stagger,
+  pauseDuration,
+}: {
+  char: string;
+  index: number;
+  time: MotionValue<number>;
+  duration: number;
+  stagger: number;
+  pauseDuration: number;
+}) {
+  const cycle = (pauseDuration + duration) * 2;
+
+  const y = useTransform(time, (t) => {
+    // Sebelum giliran huruf ini tiba, tetap diam di posisi awal
+    const local = Math.max(0, t - index * stagger) % cycle;
+
+    let slot: number; // 0 -> 1 -> 2 (slot 3 = duplikat slot 1)
+    if (local < pauseDuration) {
+      slot = 0;
+    } else if (local < pauseDuration + duration) {
+      slot = easeInOutCubic((local - pauseDuration) / duration);
+    } else if (local < pauseDuration * 2 + duration) {
+      slot = 1;
+    } else {
+      slot = 1 + easeInOutCubic((local - pauseDuration * 2 - duration) / duration);
+    }
+    return `${-(slot * 100) / 3}%`;
+  });
+
+  return (
+    <span
+      aria-hidden="true"
+      className="relative inline-block h-[1.12em] overflow-hidden align-baseline"
+      style={{ verticalAlign: "baseline" }}
+    >
+      <motion.span
+        className="flex flex-col will-change-transform"
+        style={{ height: "300%", y }}
+      >
+        {/* Slot 1 */}
+        <span className="flex h-1/3 items-center justify-center">
+          <span className="inline-block bg-gradient-to-b from-white via-white/95 to-[#D8DEE9] bg-clip-text text-transparent">
+            {char}
+          </span>
+        </span>
+
+        {/* Slot 2 (aksen ice cyan) */}
+        <span className="flex h-1/3 items-center justify-center">
+          <span className="inline-block bg-gradient-to-b from-white via-[#ECEFF4] to-[#88C0D0] bg-clip-text text-transparent">
+            {char}
+          </span>
+        </span>
+
+        {/* Slot 3: duplikat slot 1 agar loop mulus */}
+        <span className="flex h-1/3 items-center justify-center">
+          <span className="inline-block bg-gradient-to-b from-white via-white/95 to-[#D8DEE9] bg-clip-text text-transparent">
+            {char}
+          </span>
+        </span>
+      </motion.span>
+    </span>
+  );
+}
+
 /**
- * TextRoll Component
- * Inspired by @ibelick's Text Roll component on 21st.dev & Motion Primitives.
- * Splits text into words and individual characters, animating each character
- * with a vertical 3D mechanical flip/rotation effect with staggered timing.
+ * TextRoll
+ * Satu jam (rAF) untuk seluruh teks. Berhenti total saat di luar viewport,
+ * lalu melanjutkan dari titik terakhir tanpa lompatan.
  */
 export function TextRoll({
   children,
-  duration = 0.55,
-  stagger = 0.018,
-  pauseDuration = 2,
-  loop = true,
+  duration = 0.75,
+  stagger = 0.034,
+  pauseDuration = 2.2,
   className = "",
 }: TextRollProps) {
   const containerRef = useRef<HTMLSpanElement>(null);
-  const inView = useInView(containerRef, { margin: "100px 0px" });
+  const inView = useInView(containerRef, { margin: "120px 0px" });
   const reduceMotion = useReducedMotion();
-  const [rollKey, setRollKey] = useState(0);
-  const hasTriggeredInitial = useRef(false);
 
-  // Split text into words, then words into characters with global sequential indexing
+  const time = useMotionValue(0);
+  const elapsed = useRef(0);
+
   const wordData = useMemo(() => {
     let globalIndex = 0;
-    return children.split(" ").map((word) => {
-      const chars = word.split("").map((char) => ({
-        char,
-        index: globalIndex++,
-      }));
-      return { word, chars };
-    });
+    return children.split(" ").map((word) => ({
+      word,
+      chars: word.split("").map((char) => ({ char, index: globalIndex++ })),
+    }));
   }, [children]);
 
-  const totalChars = useMemo(() => {
-    return wordData.reduce((acc, w) => acc + w.chars.length, 0);
-  }, [wordData]);
-
-  // Total duration of a full wave cascade across the entire sentence
-  const totalWaveDuration = useMemo(() => {
-    return Math.max(0, (totalChars - 1) * stagger) + duration;
-  }, [totalChars, stagger, duration]);
-
-  // Initial trigger after scrolling into view
   useEffect(() => {
     if (!inView || reduceMotion) return;
 
-    if (!hasTriggeredInitial.current) {
-      hasTriggeredInitial.current = true;
-      const initialTimer = setTimeout(() => {
-        setRollKey(1);
-      }, 700);
-      return () => clearTimeout(initialTimer);
-    }
-  }, [inView, reduceMotion]);
+    let raf = 0;
+    let last = performance.now();
 
-  // Continuous looping interval
-  useEffect(() => {
-    if (!loop || !inView || reduceMotion || rollKey === 0) return;
+    const tick = (now: number) => {
+      // Clamp: setelah tab di-background, waktu tidak melompat jauh
+      const dt = Math.min(now - last, 50);
+      last = now;
+      elapsed.current += dt / 1000;
+      time.set(elapsed.current);
+      raf = requestAnimationFrame(tick);
+    };
 
-    const cycleTime = (totalWaveDuration + pauseDuration) * 1000;
-    const timer = setTimeout(() => {
-      setRollKey((prev) => prev + 1);
-    }, cycleTime);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, reduceMotion, time]);
 
-    return () => clearTimeout(timer);
-  }, [loop, inView, reduceMotion, rollKey, totalWaveDuration, pauseDuration]);
-
-  // Fallback for users with reduced motion preference
   if (reduceMotion) {
-    return <span className={className}>{children}</span>;
+    return (
+      <span className={`inline-block ${className}`}>
+        <span className="bg-gradient-to-b from-white via-white/95 to-[#D8DEE9] bg-clip-text text-transparent">
+          {children}
+        </span>
+      </span>
+    );
   }
-
-  const isAnimating = rollKey > 0;
 
   return (
     <span
       ref={containerRef}
-      className={`inline ${className}`}
-      onMouseEnter={() => {
-        if (!reduceMotion) {
-          setRollKey((prev) => prev + 1);
-        }
-      }}
+      aria-label={children}
+      className={`inline-flex select-none flex-wrap items-baseline justify-center ${className}`}
     >
       {wordData.map(({ chars }, wordIdx) => (
         <React.Fragment key={wordIdx}>
-          <span className="inline-flex whitespace-nowrap">
+          <span aria-hidden="true" className="inline-flex whitespace-nowrap">
             {chars.map(({ char, index }) => (
-              <span
+              <RollChar
                 key={`${wordIdx}-${index}`}
-                className="relative inline-block overflow-hidden [perspective:800px] select-none py-[0.04em]"
-                style={{ verticalAlign: "top" }}
-              >
-                <motion.span
-                  key={rollKey}
-                  className="relative flex flex-col [transform-style:preserve-3d]"
-                  initial={{ y: "0%" }}
-                  animate={isAnimating ? { y: "-100%" } : { y: "0%" }}
-                  transition={{
-                    duration,
-                    delay: isAnimating ? index * stagger : 0,
-                    ease: [0.22, 1, 0.36, 1], // Smooth cubic-bezier mechanical easing
-                  }}
-                >
-                  {/* Face 1: Current character rolling up and folding back */}
-                  <motion.span
-                    className="inline-block [transform-origin:bottom] [backface-visibility:hidden]"
-                    initial={{ rotateX: 0, opacity: 1 }}
-                    animate={
-                      isAnimating
-                        ? { rotateX: 90, opacity: 0.15 }
-                        : { rotateX: 0, opacity: 1 }
-                    }
-                    transition={{
-                      duration,
-                      delay: isAnimating ? index * stagger : 0,
-                      ease: [0.22, 1, 0.36, 1],
-                    }}
-                  >
-                    {char}
-                  </motion.span>
-
-                  {/* Face 2: Incoming duplicate character rolling up from bottom and unfolding */}
-                  <motion.span
-                    className="absolute left-0 top-full inline-block [transform-origin:top] [backface-visibility:hidden]"
-                    initial={{ rotateX: -90, opacity: 0.15 }}
-                    animate={
-                      isAnimating
-                        ? { rotateX: 0, opacity: 1 }
-                        : { rotateX: -90, opacity: 0.15 }
-                    }
-                    transition={{
-                      duration,
-                      delay: isAnimating ? index * stagger : 0,
-                      ease: [0.22, 1, 0.36, 1],
-                    }}
-                  >
-                    {char}
-                  </motion.span>
-                </motion.span>
-              </span>
+                char={char}
+                index={index}
+                time={time}
+                duration={duration}
+                stagger={stagger}
+                pauseDuration={pauseDuration}
+              />
             ))}
           </span>
 
-          {/* Space between words */}
           {wordIdx < wordData.length - 1 && (
-            <span className="inline-block">&nbsp;</span>
+            <span aria-hidden="true" className="inline-block w-[0.28em]">
+              &nbsp;
+            </span>
           )}
         </React.Fragment>
       ))}
@@ -166,4 +184,3 @@ export function TextRoll({
 }
 
 export default TextRoll;
-

@@ -15,7 +15,6 @@ export const FALLBACK_EXPERIENCES: Experience[] = [
       'Build mobile applications using Flutter',
       'Implement state management using Provider and BLoC',
       'Integrate REST APIs with mobile applications',
-      'Translate UI/UX designs into responsive interfaces',
     ],
   },
   {
@@ -30,7 +29,6 @@ export const FALLBACK_EXPERIENCES: Experience[] = [
       'Develop web interfaces using React and Next.js',
       'Build responsive UI with Tailwind CSS',
       'Integrate frontend with backend APIs',
-      'Collaborate with backend and UI/UX teams',
     ],
   },
   {
@@ -45,7 +43,6 @@ export const FALLBACK_EXPERIENCES: Experience[] = [
       'Explain algorithm and data structure concepts',
       'Guide students during practical sessions',
       'Assist students with programming problems',
-      'Prepare and demonstrate programming case studies',
     ],
   },
   {

@@ -7,7 +7,7 @@ import { useRef } from "react"
 import cvImg from "../sticker/cv.png"
 import laptopImg from "../sticker/laptop.png"
 import ubImg from "../sticker/ub.png"
-import Cat from "../svg/Cat"
+import cat1Img from "../sticker/cat1.png"
 import { type StickerInfo } from "./TerminalModal"
 
 export const STICKER_DATA: Record<string, StickerInfo> = {
@@ -305,8 +305,13 @@ export default function FloatingStickers({
         float={{ y: 6, duration: 4.8 }}
         {...shared}
       >
-        <div className="group/cat relative w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 select-none p-2 transition-transform duration-300 hover:drop-shadow-[0_12px_35px_rgba(136,192,208,0.35)]">
-          <Cat className="w-full h-auto drop-shadow-md pointer-events-auto" />
+        <div className="group/cat relative w-44 sm:w-52 md:w-60 lg:w-68 xl:w-76 select-none p-2 transition-transform duration-300 hover:drop-shadow-[0_12px_35px_rgba(136,192,208,0.35)]">
+          <img
+            src={cat1Img}
+            alt="Cosmo the Cat"
+            className="w-full h-auto object-contain drop-shadow-md pointer-events-auto transition-transform duration-300 group-hover/cat:scale-105"
+            draggable={false}
+          />
           <span className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#2E3440]/90 px-2 py-0.5 text-[10px] font-mono text-[#88C0D0] opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover/cat:opacity-100 border border-white/10">
             drag or tap Cosmo
           </span>
