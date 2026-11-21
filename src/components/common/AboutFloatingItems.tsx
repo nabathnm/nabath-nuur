@@ -6,13 +6,11 @@ import {
   GitBranch,
   Layers,
   Sparkles,
-  Star,
 } from "lucide-react";
 import React from "react";
 
 // Asset imports
 import cvImg from "../sticker/cv.png";
-import laptopImg from "../sticker/laptop.png";
 import ubImg from "../sticker/ub.png";
 
 interface AboutFloatingItemsProps {
@@ -90,7 +88,7 @@ export default function AboutFloatingItems({
           1. TOP-RIGHT: Code Craft / Daily Streak Card (Ref: Quality Time / Games Night)
           ========================================================================= */}
       <FloatingCard
-        className="hidden lg:block top-[10%] right-[3%] xl:right-[6%]"
+        className="hidden lg:block top-[14%] right-[3%] xl:right-[6%]"
         rotate={-3.5}
         floatY={10}
         duration={5.2}

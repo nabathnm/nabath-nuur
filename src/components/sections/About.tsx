@@ -8,8 +8,10 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion"
-import { useRef, type ComponentType, type ReactNode } from "react"
+import { useEffect, useRef, type ComponentType, type ReactNode } from "react"
 import { Mail } from "lucide-react"
+import { useLenis } from "@/lib/lenis"
+import Snap from "lenis/snap"
 import ScrollMaskCard from "../common/ScrollMaskCard"
 import AboutFloatingItems from "../common/AboutFloatingItems"
 
@@ -170,9 +172,49 @@ function SideReveal({
   )
 }
 
+/* =====================================================
+   ABOUT SNAP CONFIGURATION (Effortless reveal masking)
+====================================================== */
+const ABOUT_SNAP_CONFIG = {
+  // Durasi glide halus & mulus saat ditarik ke posisi reveal penuh
+  duration: 0.85,
+  // Easing quartic ease-out yang lembut
+  easing: (t: number) => 1 - Math.pow(1 - t, 4),
+  // Respon cepat tanpa jeda tunda lama (100ms) begitu scroll melambat
+  debounce: 100,
+  // Jangkauan magnetik luas (45%): menangkap scroll user saat ekspansi kartu
+  distanceThreshold: "45%" as const,
+}
+
 export default function About() {
   const trackRef = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion() ?? false
+  const lenis = useLenis()
+
+  // Snap magnetik pada titik akhir reveal masking fullscreen
+  useEffect(() => {
+    if (!lenis || reduce) return
+
+    const snap = new Snap(lenis, {
+      type: "proximity",
+      distanceThreshold: ABOUT_SNAP_CONFIG.distanceThreshold,
+      duration: ABOUT_SNAP_CONFIG.duration,
+      easing: ABOUT_SNAP_CONFIG.easing,
+      debounce: ABOUT_SNAP_CONFIG.debounce,
+    })
+
+    const section = trackRef.current
+    if (section) {
+      const snapPoints = section.querySelectorAll<HTMLElement>("[data-about-snap]")
+      if (snapPoints.length > 0) {
+        snap.addElements(Array.from(snapPoints), { align: "start" })
+      }
+    }
+
+    return () => {
+      snap.destroy()
+    }
+  }, [lenis, reduce])
 
   // Progress of the sticky track (0 → 1), smoothed with a spring
   // (the spring is skipped when the user prefers reduced motion).
@@ -205,6 +247,18 @@ export default function About() {
 
       {/* SCROLL TRACK (sticky stage + scroll-driven card) */}
       <div ref={trackRef} className="relative z-10 h-[290vh]">
+        {/* Snap target pada titik akhir reveal masking (80% progress) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 bottom-[100vh]"
+        >
+          <div
+            data-about-snap
+            style={{ top: "80%" }}
+            className="absolute inset-x-0 h-px"
+          />
+        </div>
+
         <div className="sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden">
           {/* BACKGROUND EDITORIAL HEADLINE */}
           <motion.div
@@ -376,7 +430,7 @@ export default function About() {
 
                 <SideReveal
                   progress={progress}
-                  range={[0.7, 0.82]}
+                  range={[0.68, 0.8]}
                   from={32}
                   className="hidden sm:block"
                 >
