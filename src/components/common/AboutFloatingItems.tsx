@@ -87,10 +87,10 @@ export default function AboutFloatingItems({
       aria-hidden="true"
     >
       {/* =========================================================================
-          1. TOP-LEFT: Code Craft / Daily Streak Card (Ref: Quality Time / Games Night)
+          1. TOP-RIGHT: Code Craft / Daily Streak Card (Ref: Quality Time / Games Night)
           ========================================================================= */}
       <FloatingCard
-        className="hidden lg:block top-[10%] left-[3%] xl:left-[6%]"
+        className="hidden lg:block top-[10%] right-[3%] xl:right-[6%]"
         rotate={-3.5}
         floatY={10}
         duration={5.2}
@@ -173,36 +173,6 @@ export default function AboutFloatingItems({
         </div>
       </FloatingCard>
 
-      {/* =========================================================================
-          4. TOP-RIGHT: Cosmic Terminal Preview (Ref: Lentil Coconut Curry pill)
-          ========================================================================= */}
-      <FloatingCard
-        className="hidden lg:block top-[9%] right-[3%] xl:right-[6%]"
-        rotate={2.5}
-        floatY={9}
-        duration={5.8}
-        delay={0.25}
-      >
-        <div className="flex items-center gap-3 rounded-2xl border border-white/70 bg-[#ECEFF4] p-2 pr-4 text-[#2E3440] shadow-[0_12px_28px_rgba(0,0,0,0.18)]">
-          <div className="h-10 w-10 overflow-hidden rounded-xl bg-[#2E3440] p-1 flex items-center justify-center">
-            <img
-              src={laptopImg}
-              alt="Cosmic Terminal"
-              className="h-full w-full object-contain"
-            />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold leading-tight text-[#2E3440]">
-              Cosmic Terminal
-            </span>
-            <span className="flex items-center gap-1 text-[10px] text-[#4C566A]">
-              <Star className="h-2.5 w-2.5 fill-[#EBCB8B] text-[#EBCB8B]" />
-              <span className="font-semibold text-[#2E3440]">5.0</span>
-              <span>• Nord OS</span>
-            </span>
-          </div>
-        </div>
-      </FloatingCard>
 
       {/* =========================================================================
           6. MID-LEFT: Coffee Chat / Developer Philosophy (Ref: Speech bubble)
